@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Seven Days</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="date-override" class="date-override" hidden></div>
+  <main class="app-shell">
+    <section class="scene-column" aria-label="Today's scene">
+      <div id="scene" class="scene">
+        <img id="scene-image" class="scene-image" alt="">
+        <div id="scene-flash" class="scene-flash" aria-hidden="true"></div>
+        <img id="creature" class="sprite creature" alt="Creature">
+        <img id="sword" class="sprite sword" src="assets/sword.png" alt="Sword">
+        <img id="ghost" class="sprite ghost" src="assets/ghost.png" alt="Ghost">
+      </div>
+    </section>
+    <section class="side-column" aria-label="Daily tasks and seven-day record">
+      <header>
+        <p class="eyebrow">Day <span id="day-number"></span></p>
+        <h1>Seven Days</h1>
+        <p id="date-label" class="date-label"></p>
+      </header>
+      <section class="panel tasks-panel" aria-labelledby="tasks-title">
+        <h2 id="tasks-title">Today</h2>
+        <div id="task-list" class="task-list"></div>
+      </section>
+      <section class="panel record-panel" aria-labelledby="record-title">
+        <h2 id="record-title">Record</h2>
+        <div id="record" class="record" aria-label="Seven day record"></div>
+      </section>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
