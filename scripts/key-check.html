@@ -17,7 +17,7 @@
 <h1>Processed asset check</h1>
 <main class="grid" id="grid"></main>
 <script>
-  const files = ['egg.png', 'ghost.png', 'sword.png', ...Array.from({length: 7}, (_, i) => `stage-${i + 1}.png`)];
+  const files = ['bg-wood.png', 'divider.png', 'egg.png', 'frame.png', 'ghost.png', 'object-bloom.png', 'object-ember.png', 'object-tide.png', ...Array.from({length: 7}, (_, i) => `stage-${i + 1}.png`), 'sword.png', 'wordmark.png'];
   document.querySelector('#grid').innerHTML = files.map(name => `<figure><figcaption>${name}</figcaption><div class="views"><div class="view dark"><img src="../assets/${name}" alt="${name} on dark"></div><div class="view light"><img src="../assets/${name}" alt="${name} on light"></div></div></figure>`).join('');
 </script>
 </body>

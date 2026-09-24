@@ -3,6 +3,7 @@
 
 from collections import deque
 from pathlib import Path
+from shutil import copyfile
 
 from PIL import Image
 
@@ -13,8 +14,9 @@ PADDING = 4
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_DIR = ROOT / "assets" / "originals"
 OUTPUT_DIR = ROOT / "assets"
-MAGENTA_FILES = {"egg.png", "sword.png", "ghost.png"}
 WHITE_FILES = {f"stage-{number}.png" for number in range(1, 8)}
+UNKEYED_FILES = {"bg-wood.png"}
+UNTRIMMED_FILES = {"frame.png"}
 
 
 def distance(left, right):
@@ -83,14 +85,16 @@ def trim_with_padding(image):
 
 def main():
     for path in sorted(SOURCE_DIR.glob("*.png")):
-        if path.name not in MAGENTA_FILES | WHITE_FILES:
+        if path.name in UNKEYED_FILES:
+            copyfile(path, OUTPUT_DIR / path.name)
             continue
         image = Image.open(path).convert("RGBA")
-        if path.name in MAGENTA_FILES:
-            key_magenta(image)
-        else:
+        if path.name in WHITE_FILES:
             key_white_from_border(image)
-        trim_with_padding(image).save(OUTPUT_DIR / path.name)
+        else:
+            key_magenta(image)
+        output = image if path.name in UNTRIMMED_FILES else trim_with_padding(image)
+        output.save(OUTPUT_DIR / path.name)
 
 
 if __name__ == "__main__":
