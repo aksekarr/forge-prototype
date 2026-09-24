@@ -1,8 +1,8 @@
 // Edit these scene-relative positions to match changes to the artwork.
 const SCENES = [
   { name: 'clearing', file: 'scene-clearing.png', creature: { x: 53, y: 75 }, ghost: { x: 85, y: 19 }, sword: { x: 16, y: 21 } },
-  { name: 'hollow', file: 'scene-hollow.png', creature: { x: 40, y: 76 }, ghost: { x: 76, y: 26 }, sword: { x: 56, y: 38 } },
-  { name: 'stream', file: 'scene-stream.png', creature: { x: 30, y: 68 }, ghost: { x: 74, y: 24 }, sword: { x: 52, y: 36 } },
+  { name: 'hollow', file: 'scene-hollow.png', creature: { x: 50, y: 75 }, ghost: { x: 78, y: 18 }, sword: { x: 14, y: 22 } },
+  { name: 'stream', file: 'scene-stream.png', creature: { x: 34, y: 63 }, ghost: { x: 82, y: 23 }, sword: { x: 15, y: 21 } },
 ];
 
 const ANIMATION_TIMINGS = {
@@ -106,6 +106,11 @@ function applyPositions(sceneConfig) {
 
 function currentSceneConfig() { return SCENES[Math.max(0, dayOffset(today)) % SCENES.length]; }
 function wait(milliseconds) { return new Promise(resolve => window.setTimeout(resolve, reduceMotion ? Math.min(180, milliseconds) : milliseconds)); }
+async function waitForVisualCompletion(elements) {
+  const animations = elements.flatMap(element => element.getAnimations().filter(animation => animation.playState !== 'finished'));
+  await Promise.all(animations.map(animation => animation.finished.catch(() => undefined)));
+  await new Promise(resolve => requestAnimationFrame(resolve));
+}
 function particleBurst(x, y, count, star = false, kind = '', colours = [], upward = false) {
   if (reduceMotion) return;
   const layer = document.querySelector('#particles');
@@ -304,10 +309,14 @@ async function runForge(fromCount, toCount, beforeStage, done) {
       particleBurst(point.x, point.y, 1);
     }
   });
-  await wait(ANIMATION_TIMINGS.forgePulse);
+  await waitForVisualCompletion([
+    document.querySelector('#sword'),
+    document.querySelector('#sword-shimmer'),
+    document.querySelector('#sword-edge'),
+  ]);
   activeSequence = { kind: 'forge-cool', beforeStage, revealOverride: SWORD_REVEALS[toCount] };
   render();
-  await wait(ANIMATION_TIMINGS.forgeCool);
+  await waitForVisualCompletion([document.querySelector('#sword')]);
   done();
 }
 
@@ -346,10 +355,24 @@ function setStrikeVector() {
   const dx = (ghostBox.left + ghostBox.width / 2) - (swordBox.left + swordBox.width / 2);
   const dy = (ghostBox.top + ghostBox.height / 2) - (swordBox.top + swordBox.height / 2);
   const angle = Math.atan2(dx, -dy) * 180 / Math.PI;
-  const distance = Math.max(0, Math.hypot(dx, dy) - swordBox.height / 2);
+  const distance = Math.max(0, Math.hypot(dx, dy) - swordBox.height / 2 + swordBox.height * .15);
   scene.style.setProperty('--strike-angle', `${angle}deg`);
   scene.style.setProperty('--strike-dx', `${Math.sin(angle * Math.PI / 180) * distance}px`);
   scene.style.setProperty('--strike-dy', `${-Math.cos(angle * Math.PI / 180) * distance}px`);
+}
+
+function freezeGhostForStrike() {
+  const sceneBox = document.querySelector('#scene').getBoundingClientRect();
+  const ghost = document.querySelector('#ghost');
+  const ghostBox = ghost.getBoundingClientRect();
+  ghost.style.left = `${ghostBox.left + ghostBox.width / 2 - sceneBox.left}px`;
+  ghost.style.top = `${ghostBox.top + ghostBox.height / 2 - sceneBox.top}px`;
+}
+
+function releaseGhostAfterStrike() {
+  const ghost = document.querySelector('#ghost');
+  ghost.style.left = '';
+  ghost.style.top = '';
 }
 
 async function runStrike(beforeStage) {
@@ -359,9 +382,14 @@ async function runStrike(beforeStage) {
     await wait(ANIMATION_TIMINGS.strikeFade);
     return;
   }
-  activeSequence = { kind: 'strike-charge', beforeStage, revealOverride: 100 };
+  activeSequence = { kind: 'strike-measure', beforeStage, revealOverride: 100 };
   render();
-  requestAnimationFrame(setStrikeVector);
+  const sword = document.querySelector('#sword');
+  await waitForVisualCompletion([sword, document.querySelector('#sword-shimmer'), document.querySelector('#sword-edge')]);
+  setStrikeVector();
+  freezeGhostForStrike();
+  activeSequence.kind = 'strike-charge';
+  render();
   await wait(ANIMATION_TIMINGS.strikeCharge);
   activeSequence.kind = 'strike-hold';
   render();
@@ -384,8 +412,8 @@ async function runStrike(beforeStage) {
   clearGhostGlitch();
   if (isLayoutMode) {
     layoutGhostCooldown = true;
-    window.setTimeout(() => { layoutGhostCooldown = false; render(); }, ANIMATION_TIMINGS.layoutGhostReturn);
-  }
+    window.setTimeout(() => { releaseGhostAfterStrike(); layoutGhostCooldown = false; render(); }, ANIMATION_TIMINGS.layoutGhostReturn);
+  } else releaseGhostAfterStrike();
 }
 
 async function runHatch(beforeStage, targetStage) {
