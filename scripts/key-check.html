@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keyed asset check</title>
+<style>
+  body { font: 16px system-ui, sans-serif; margin: 24px; background: #eee; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  figure { margin: 0; border: 1px solid #999; background: #fff; }
+  figcaption { padding: 8px; font-weight: 600; }
+  .views { display: grid; grid-template-columns: 1fr 1fr; }
+  .view { min-height: 180px; padding: 12px; display: grid; place-items: center; }
+  .dark { background: #17202a; } .light { background: #fffdf4; }
+  img { image-rendering: pixelated; max-width: 100%; max-height: 260px; }
+</style>
+<body>
+<h1>Processed asset check</h1>
+<main class="grid" id="grid"></main>
+<script>
+  const files = ['egg.png', 'ghost.png', 'sword.png', ...Array.from({length: 7}, (_, i) => `stage-${i + 1}.png`)];
+  document.querySelector('#grid').innerHTML = files.map(name => `<figure><figcaption>${name}</figcaption><div class="views"><div class="view dark"><img src="../assets/${name}" alt="${name} on dark"></div><div class="view light"><img src="../assets/${name}" alt="${name} on light"></div></div></figure>`).join('');
+</script>
+</body>
+</html>
