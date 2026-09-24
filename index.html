@@ -12,6 +12,8 @@
     <section class="scene-column" aria-label="Today's scene">
       <div id="scene" class="scene">
         <img id="scene-image" class="scene-image" alt="">
+        <canvas id="ambient-canvas" class="ambient-canvas" aria-hidden="true"></canvas>
+        <div id="ambient-markers" class="ambient-markers" aria-hidden="true"></div>
         <div class="scene-dimmer" aria-hidden="true"></div>
         <div id="scene-flash" class="scene-flash" aria-hidden="true"></div>
         <img id="creature" class="sprite creature" alt="Creature">
@@ -40,6 +42,7 @@
         <div id="record" class="record" aria-label="Seven day record"></div>
       </section>
       <section id="layout-tools" class="layout-tools" hidden aria-label="Layout test tools">
+        <label>Layout mode <select id="layout-mode"><option value="sprites">Sprites</option><option value="glows">Glow points</option><option value="glints">Glint points</option></select></label>
         <label>Preview form <select id="form-preview"></select></label>
         <p id="layout-readout"></p>
         <button id="copy-layout" type="button">Copy config</button>
