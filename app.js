@@ -1,8 +1,8 @@
 // Edit these scene-relative positions to match changes to the artwork.
 const SCENES = [
-  { name: 'clearing', file: 'scene-clearing.png', creature: { x: 53, y: 75 }, ghost: { x: 85, y: 19 }, sword: { x: 16, y: 21 }, glowPoints: [], glintPoints: [] },
-  { name: 'hollow', file: 'scene-hollow.png', creature: { x: 50, y: 75 }, ghost: { x: 78, y: 18 }, sword: { x: 14, y: 22 }, glowPoints: [], glintPoints: [] },
-  { name: 'stream', file: 'scene-stream.png', creature: { x: 34, y: 63 }, ghost: { x: 82, y: 23 }, sword: { x: 15, y: 21 }, glowPoints: [], glintPoints: [] },
+  { name: 'clearing', file: 'scene-clearing.png', creature: { x: 53, y: 75 }, ghost: { x: 85, y: 19 }, sword: { x: 16, y: 21 }, glowPoints: [{ x: 68, y: 84 }, { x: 81, y: 83 }, { x: 12, y: 73 }, { x: 7, y: 74 }, { x: 89, y: 51 }, { x: 95, y: 43 }, { x: 77, y: 34 }, { x: 10, y: 42 }, { x: 3, y: 52 }, { x: 16, y: 88 }, { x: 8, y: 90 }, { x: 7, y: 86 }], glintPoints: [{ x: 22, y: 52 }, { x: 14, y: 55 }, { x: 17, y: 49 }, { x: 16, y: 46 }, { x: 37, y: 38 }, { x: 38, y: 34 }] },
+  { name: 'hollow', file: 'scene-hollow.png', creature: { x: 50, y: 75 }, ghost: { x: 78, y: 18 }, sword: { x: 14, y: 22 }, glowPoints: [{ x: 95, y: 54 }, { x: 85, y: 41 }, { x: 81, y: 43 }, { x: 93, y: 71 }, { x: 84, y: 81 }, { x: 77, y: 78 }, { x: 24, y: 82 }, { x: 18, y: 80 }, { x: 10, y: 57 }, { x: 14, y: 43 }, { x: 17, y: 45 }, { x: 58, y: 4 }, { x: 75, y: 4 }], glintPoints: [{ x: 28, y: 11 }, { x: 38, y: 16 }, { x: 32, y: 19 }, { x: 43, y: 26 }, { x: 31, y: 30 }, { x: 18, y: 79 }, { x: 26, y: 85 }, { x: 74, y: 85 }, { x: 90, y: 78 }, { x: 96, y: 56 }, { x: 91, y: 49 }] },
+  { name: 'stream', file: 'scene-stream.png', creature: { x: 34, y: 63 }, ghost: { x: 82, y: 23 }, sword: { x: 15, y: 21 }, glowPoints: [{ x: 95, y: 89 }, { x: 95, y: 85 }, { x: 36, y: 79 }, { x: 41, y: 82 }, { x: 13, y: 68 }, { x: 3, y: 55 }, { x: 97, y: 37 }], glintPoints: [{ x: 74, y: 39 }, { x: 76, y: 34 }, { x: 96, y: 52 }, { x: 73, y: 47 }, { x: 84, y: 53 }, { x: 93, y: 61 }, { x: 91, y: 68 }, { x: 83, y: 63 }, { x: 71, y: 74 }, { x: 67, y: 35 }, { x: 93, y: 56 }, { x: 89, y: 48 }] },
 ];
 
 const AMBIENT_CONFIG = {
@@ -12,7 +12,6 @@ const AMBIENT_CONFIG = {
   flowerGlows: { radius: 34, opacity: .24, pulseSpeed: .65, colour: '#ffdca0' },
   waterGlints: { interval: [500, 1200], radius: 22, opacity: .8, colour: '#d9f6ff', lifetime: .7 },
   shafts: { opacity: .13, pulseSpeed: .22, colour: '#fff4c8' },
-  mist: { opacity: .12, speed: 5, colour: '#e6eef0' },
   creatureSparks: { interval: [6000, 10000], count: [4, 6], speed: [18, 35], spread: 8, lifetime: 1.3, colours: ['#ffd76e', '#ffb65c'] },
   swordGlint: { interval: [7000, 10000], opacity: .85, colour: '#fff4b0', lifetime: .9 },
   ghostWisps: { interval: [2600, 4800], count: 2, spread: 7, lifetime: 1.3, colour: '#d9eff7', opacity: .38 },
@@ -307,8 +306,6 @@ function drawAmbient(timestamp) {
       context.fillStyle = `${AMBIENT_CONFIG.shafts.colour}${Math.round(strength * 255).toString(16).padStart(2, '0')}`;
       context.beginPath(); context.moveTo(0, 0); context.lineTo(rect.width * .45, 0); context.lineTo(rect.width * .12, rect.height); context.lineTo(0, rect.height); context.fill();
     }
-    context.fillStyle = `${AMBIENT_CONFIG.mist.colour}${Math.round(AMBIENT_CONFIG.mist.opacity * 255).toString(16).padStart(2, '0')}`;
-    context.fillRect(((time * AMBIENT_CONFIG.mist.speed) % rect.width) - rect.width, rect.height * .72, rect.width * 1.5, rect.height * .18);
     for (const firefly of ambient.fireflies) {
       firefly.phase += delta * firefly.blink; firefly.drift += delta * AMBIENT_CONFIG.fireflies.speed / 18;
       const x = firefly.x + Math.cos(firefly.drift) * 2, y = firefly.y + Math.sin(firefly.drift * .7) * 1.4;
