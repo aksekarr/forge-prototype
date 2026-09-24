@@ -9,7 +9,8 @@ const ANIMATION_TIMINGS = {
   forgePulse: 800, forgeCool: 600, strikeCharge: 600, strikeHold: 300, strikeDrive: 250,
   strikeHitStop: 120, strikeGlitch: 800, strikeFade: 250,
   hatchRock: 2000, hatchPause: 500, hatchJolt: 2500, hatchMotion: 5000, hatchFlash: 300, hatchLand: 700,
-  evolveGather: 1500, evolveFlicker: 2500, evolveFlash: 300, evolveReveal: 1700, evolveEmbers: 2000,
+  evolveGather: 1500, evolveSilhouetteHold: 500, evolveFlicker: 3000, evolveFlash: 300, evolveReveal: 1700, evolveEmbers: 2000,
+  layoutGhostReturn: 1500,
   finalFlash: 420,
 };
 Object.entries(ANIMATION_TIMINGS).forEach(([name, milliseconds]) => {
@@ -55,6 +56,7 @@ let activeSequence = null;
 let layoutPoints = null;
 let layoutSceneName = null;
 let layoutPreview = null;
+let layoutGhostCooldown = false;
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function save() { if (!isLayoutMode) localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
@@ -163,13 +165,35 @@ function swirlGather(x, y) {
     const particle = document.createElement('i');
     particle.className = 'spark gather';
     particle.style.setProperty('--x', `${x + Math.cos(angle) * 13}%`);
-    particle.style.setProperty('--y', `${y - 12 + Math.sin(angle) * 9}%`);
+    particle.style.setProperty('--y', `${y + Math.sin(angle) * 9}%`);
     particle.style.setProperty('--dx', `${-Math.cos(angle) * radius}px`);
     particle.style.setProperty('--dy', `${-Math.sin(angle) * radius}px`);
     particle.style.setProperty('--life', `${.9 + Math.random() * .55}s`);
     layer.append(particle);
     particle.addEventListener('animationend', () => particle.remove(), { once: true });
   }
+}
+
+function creatureCenter() {
+  const sceneBox = document.querySelector('#scene').getBoundingClientRect();
+  const creatureBox = document.querySelector('#creature').getBoundingClientRect();
+  return {
+    x: ((creatureBox.left + creatureBox.width / 2 - sceneBox.left) / sceneBox.width) * 100,
+    y: ((creatureBox.top + creatureBox.height / 2 - sceneBox.top) / sceneBox.height) * 100,
+  };
+}
+
+function setEffectCenter(point) {
+  const scene = document.querySelector('#scene');
+  scene.style.setProperty('--effect-x', `${point.x}%`);
+  scene.style.setProperty('--effect-y', `${point.y}%`);
+}
+
+function pulseSilhouette() {
+  const visible = document.querySelector('#evolution-form').style.opacity === '1' ? document.querySelector('#evolution-form') : document.querySelector('#creature');
+  visible.classList.remove('swap-pulse');
+  void visible.offsetWidth;
+  visible.classList.add('swap-pulse');
 }
 
 function showGhostGlitch() {
@@ -214,7 +238,7 @@ function render() {
   const revealed = isLayoutMode ? 100 : activeSequence?.revealOverride ?? SWORD_REVEALS[completedCount(tasks)];
   sword.style.setProperty('--sword-clip', `${100 - revealed}%`);
   sword.classList.toggle('partial', !activeSequence && !isLayoutMode && revealed > 0 && revealed < 100);
-  ghost.hidden = (!isLayoutMode && isTodayComplete && !activeSequence) || Boolean(activeSequence?.ghostGone);
+  ghost.hidden = (!isLayoutMode && isTodayComplete && !activeSequence) || Boolean(activeSequence?.ghostGone) || (isLayoutMode && layoutGhostCooldown);
   sword.hidden = Boolean(activeSequence?.swordGone);
   const showEvolution = activeSequence?.kind === 'evolving';
   evolutionForm.hidden = !showEvolution;
@@ -358,6 +382,10 @@ async function runStrike(beforeStage) {
   render();
   await wait(ANIMATION_TIMINGS.strikeFade);
   clearGhostGlitch();
+  if (isLayoutMode) {
+    layoutGhostCooldown = true;
+    window.setTimeout(() => { layoutGhostCooldown = false; render(); }, ANIMATION_TIMINGS.layoutGhostReturn);
+  }
 }
 
 async function runHatch(beforeStage, targetStage) {
@@ -372,12 +400,15 @@ async function runHatch(beforeStage, targetStage) {
   await wait(ANIMATION_TIMINGS.hatchRock + ANIMATION_TIMINGS.hatchPause + ANIMATION_TIMINGS.hatchJolt);
   activeSequence.kind = 'hatch-flash';
   render();
+  const shellPoint = creatureCenter();
+  setEffectCenter(shellPoint);
+  particleBurst(shellPoint.x, shellPoint.y, 16, false, 'shell', ['#f6b33e', '#f28a31', '#ffd36d', '#c96a2d']);
   await wait(ANIMATION_TIMINGS.hatchFlash);
   activeSequence = { kind: 'hatch-reveal', beforeStage: targetStage, revealOverride: 100, ghostGone: true, swordGone: true };
   render();
-  const point = currentSceneConfig().creature;
-  particleBurst(point.x, point.y - 9, 16, false, 'shell', ['#f6b33e', '#f28a31', '#ffd36d', '#c96a2d']);
-  particleBurst(point.x, point.y - 12, 16, true);
+  const point = creatureCenter();
+  setEffectCenter(point);
+  particleBurst(point.x, point.y, 16, true);
   await wait(ANIMATION_TIMINGS.hatchLand);
 }
 
@@ -390,26 +421,35 @@ async function runEvolution(beforeStage, targetStage) {
   }
   activeSequence = { kind: 'evolve-gather', beforeStage, targetStage, revealOverride: 100, ghostGone: true, swordGone: true };
   render();
-  const point = isLayoutMode ? layoutPoints.creature : currentSceneConfig().creature;
-  swirlGather(point.x, point.y - 11);
+  const point = creatureCenter();
+  setEffectCenter(point);
+  swirlGather(point.x, point.y);
   await wait(ANIMATION_TIMINGS.evolveGather);
   activeSequence = { kind: 'evolving', beforeStage, targetStage, revealOverride: 100, showNew: false, ghostGone: true, swordGone: true };
   render();
   if (!reduceMotion) {
+    await wait(ANIMATION_TIMINGS.evolveSilhouetteHold);
     const start = performance.now();
-    let flip = false;
+    let showNew = false;
     while (performance.now() - start < ANIMATION_TIMINGS.evolveFlicker) {
       const progress = (performance.now() - start) / ANIMATION_TIMINGS.evolveFlicker;
-      activeSequence.showNew = flip = !flip;
-      document.querySelector('#creature').style.opacity = flip ? '0' : '1';
-      document.querySelector('#evolution-form').style.opacity = flip ? '1' : '0';
-      await wait(350 - 295 * progress);
+      activeSequence.showNew = showNew = !showNew;
+      document.querySelector('#creature').style.opacity = showNew ? '0' : '1';
+      document.querySelector('#evolution-form').style.opacity = showNew ? '1' : '0';
+      pulseSilhouette();
+      await wait(500 - 450 * progress);
     }
-  } else await wait(ANIMATION_TIMINGS.evolveFlicker);
+    activeSequence.showNew = true;
+    document.querySelector('#creature').style.opacity = '0';
+    document.querySelector('#evolution-form').style.opacity = '1';
+    pulseSilhouette();
+  } else await wait(ANIMATION_TIMINGS.evolveSilhouetteHold + ANIMATION_TIMINGS.evolveFlicker);
   activeSequence = { kind: 'evolve-flash', beforeStage: targetStage, revealOverride: 100, ghostGone: true, swordGone: true };
   render();
-  particleBurst(point.x, point.y - 14, 20, true);
-  particleBurst(point.x, point.y - 8, 8, false, 'ember', ['#ffd16a', '#f09a42', '#ffdc92'], true);
+  const revealPoint = creatureCenter();
+  setEffectCenter(revealPoint);
+  particleBurst(revealPoint.x, revealPoint.y, 20, true);
+  particleBurst(revealPoint.x, revealPoint.y, 8, false, 'ember', ['#ffd16a', '#f09a42', '#ffdc92'], true);
   await wait(ANIMATION_TIMINGS.evolveFlash);
   activeSequence = { kind: 'evolve-reveal', beforeStage: targetStage, revealOverride: 100, ghostGone: true, swordGone: true };
   render();
