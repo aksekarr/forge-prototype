@@ -29,8 +29,8 @@ button { font: inherit; }
   background: #283948;
   box-shadow: 0 24px 52px rgba(37, 29, 35, .22), 0 2px 0 rgba(255,255,255,.6) inset;
 }
-.scene-image { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
-.sprite { position: absolute; image-rendering: pixelated; z-index: 2; transform-origin: bottom center; }
+.scene-image { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: crisp-edges; image-rendering: pixelated; }
+.sprite { position: absolute; z-index: 2; transform-origin: bottom center; image-rendering: crisp-edges; image-rendering: pixelated; }
 
 .creature { width: var(--creature-width); left: var(--creature-x); top: var(--creature-y); transform: translate(-50%, -100%); }
 .creature.idle { animation: creature-breathe 3s ease-in-out infinite; }
@@ -39,7 +39,7 @@ button { font: inherit; }
 .sword { width: 17%; left: var(--sword-x); top: var(--sword-y); transform: translate(-50%, -50%); clip-path: inset(var(--sword-clip) 0 0 0); }
 .ghost, .sword { transform-origin: center; }
 .sword-edge { position: absolute; z-index: 7; left: var(--sword-edge-x); top: var(--sword-edge-y); width: 8px; height: 8px; border-radius: 50%; opacity: 0; pointer-events: none; background: #fff; box-shadow: 0 0 8px 4px #fff, 0 0 22px 8px #ff9d35; }
-.sword-shimmer { position: absolute; z-index: 6; left: var(--shimmer-x); top: var(--shimmer-y); width: var(--shimmer-width); height: var(--shimmer-height); opacity: 0; pointer-events: none; background: linear-gradient(to top, transparent, rgba(255,255,255,.85), transparent); mix-blend-mode: screen; }
+.sword-shimmer { position: absolute; z-index: 6; left: var(--shimmer-x); top: var(--shimmer-y); width: var(--shimmer-width); height: var(--shimmer-height); opacity: 0; pointer-events: none; background: linear-gradient(to top, transparent, rgba(255,255,255,.85), transparent); }
 .sword.partial { animation: sword-breathe 3s ease-in-out infinite; }
 .scene-dimmer { position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: 0; background: rgba(5, 9, 24, .6); transition: opacity .3s ease; }
 .scene.evolving .scene-dimmer { opacity: 1; }
@@ -60,6 +60,7 @@ button { font: inherit; }
 .scene.strike-charge .sword { animation: sword-charge var(--strike-charge) linear both; transform: translate(-50%, -50%) rotate(var(--strike-angle)); filter: brightness(2.4) drop-shadow(0 0 12px #fff) drop-shadow(0 0 25px #ffbe4b); }
 .scene.strike-hold .sword { transform: translate(-50%, -50%) rotate(var(--strike-angle)); filter: brightness(2.5) drop-shadow(0 0 13px #fff); }
 .scene.strike-drive .sword { animation: sword-drive var(--strike-drive) cubic-bezier(.08,.82,.2,1) forwards; filter: brightness(2.7) drop-shadow(0 0 17px #fff); }
+.scene.strike-charge .ghost, .scene.strike-hold .ghost, .scene.strike-drive .ghost { animation: none; }
 .scene.strike-hit-stop * { animation-play-state: paused !important; }
 .scene.strike-hit-stop .scene-flash { animation: impact-flash .16s ease-out both; }
 .scene.strike-hit-stop .scene-flash { animation-play-state: running !important; }
@@ -116,6 +117,7 @@ h2 { margin: 0 0 15px; font-size: 17px; font-weight: 400; letter-spacing: .04em;
 .record-value { font-size: 15px; }
 .date-override { position: fixed; z-index: 10; top: 0; left: 50%; transform: translateX(-50%); padding: 7px 12px; background: #312c3d; color: #fff; font: 12px system-ui, sans-serif; letter-spacing: .03em; }
 .layout-tools { display: grid; gap: 10px; padding: 13px; background: #e4ecdf; border: 1px solid #9dac9c; font: 13px system-ui, sans-serif; }
+.layout-tools[hidden] { display: none; }
 .layout-tools label { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .layout-tools select, .layout-tools button { font: inherit; padding: 5px 7px; }
 .layout-tools p { margin: 0; line-height: 1.45; }

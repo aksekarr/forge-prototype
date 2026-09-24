@@ -31,6 +31,7 @@ const EGG_WIDTH_PERCENT = ((STAGE_ONE.width / 1024) * CREATURE_SCALE * (442 / 45
 
 const params = new URLSearchParams(window.location.search);
 const isLayoutMode = params.get('layout') === '1';
+if (!isLayoutMode) document.querySelector('#layout-tools').remove();
 if (params.get('reset') === '1' && !isLayoutMode) {
   localStorage.removeItem(STORAGE_KEY);
   window.location.replace(`${window.location.pathname}${params.has('today') ? `?today=${params.get('today')}` : ''}`);
