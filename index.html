@@ -3,13 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Seven Days</title>
+  <title>Mirrorwood — Seven Days</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Pixelify+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <img class="wood-backdrop" src="assets/bg-wood.png" alt="" aria-hidden="true">
   <div id="date-override" class="date-override" hidden></div>
   <main class="app-shell">
+    <header class="hero">
+      <h1 class="visually-hidden">Mirrorwood</h1>
+      <img class="wordmark" src="assets/wordmark.png" alt="Mirrorwood">
+      <p>Your daily deeds grow more than you realise...</p>
+    </header>
+    <div class="app-content">
     <section class="scene-column" aria-label="Today's scene">
+      <div class="scene-frame-wrap">
       <div id="scene" class="scene">
         <img id="scene-image" class="scene-image" alt="">
         <canvas id="ambient-canvas" class="ambient-canvas" aria-hidden="true"></canvas>
@@ -26,15 +37,17 @@
         <div id="particles" class="particles" aria-hidden="true"></div>
         <i id="shockwave" class="shockwave" aria-hidden="true"></i>
       </div>
+      <img class="scene-frame" src="assets/frame.png" alt="" aria-hidden="true">
+      </div>
+    </section>
+    <section id="demo-panel" class="panel demo-panel" hidden aria-labelledby="demo-title">
+      <h2 id="demo-title">Try it</h2>
+      <p>This is a demo. Tick all three tasks to forge the sword, defeat the ghost and grow your creature. Then press Next day to move time forward and watch it evolve. Skip a day to see what happens when you don't.</p>
+      <div class="demo-actions"><button id="next-demo-day" type="button">Next day</button><button id="reset-demo" type="button">Reset demo</button><button id="read-demo-oath" class="secondary-action" type="button">Read the Oath</button></div>
     </section>
     <section class="side-column" aria-label="Daily tasks and seven-day record">
-      <header>
-        <p class="eyebrow">Day <span id="day-number"></span></p>
-        <h1>Seven Days</h1>
-        <p id="date-label" class="date-label"></p>
-      </header>
       <section class="panel tasks-panel" aria-labelledby="tasks-title">
-        <h2 id="tasks-title">Today</h2>
+        <h2 id="tasks-title">Today <span id="demo-badge" class="demo-badge" hidden>DEMO</span><span class="task-date">· Day <span id="day-number"></span> · <span id="date-label"></span></span></h2>
         <div id="task-list" class="task-list"></div>
       </section>
       <section class="panel record-panel" aria-labelledby="record-title">
@@ -54,7 +67,34 @@
         </div>
       </section>
     </section>
+    <section class="panel oath-panel" aria-labelledby="oath-title">
+      <h2 id="oath-title">The Oath</h2>
+      <p>You will not be given the ending. No one is. The harvest is not yours to command... only the sowing, and the sowing is wholly yours.</p>
+      <p>Set your heart upon the deed and not upon its fruit, and you cannot be beaten. Halted, perhaps, and for a while. But not beaten.</p>
+      <p>The tasks set before you will seem small. They are meant to. Nothing great was ever made of anything but small things laid patiently one upon another, and every tower men come far to look upon was once a man carrying a stone, and then another, and no one watching.</p>
+      <p>Do not wait upon your heart to be willing. Hearts are weather. Begin, and the will comes after... or it does not come at all, and the work stands finished regardless.</p>
+      <p>There will be days you fall. Count upon them as you count upon winter. A day lost is not a life lost, and no night is so long that the morning cannot be entered clean.</p>
+      <p>Hold two things at once and you will not break: certainty that this road ends well, and honesty about the mile you now walk. Those who carried only the first have died of springs that never came.</p>
+      <p>And know this plainly. No one is coming to do it in your stead. Others are not you.</p>
+      <p>If not now, when?</p>
+      <div class="oath-verse"><span>The end is not mine to command,</span><span>nor harvest mine to name;</span><span>the sowing only... that is mine,</span><span>in sun or wind or rain.</span></div>
+      <div class="oath-verse"><span>Let hope run thin, let will go cold,</span><span>let seasons come and go:</span><span>the stone is laid, the step is made,</span><span>and that is all I owe.</span></div>
+      <p class="oath-final">Not for the ending. For the doing.</p>
+    </section>
+    </div>
   </main>
+  <section class="about" aria-labelledby="about-title">
+    <h2 id="about-title">About</h2>
+    <article><h3><img src="assets/ghost.png" alt="">The Ghost</h3><p>It is no great terror, and that is its cunning. It does not roar or strike. It drifts at the edge of the clearing, heavy-lidded and patient, and asks only that you do nothing at all.</p><p>It is made of small things: of later, of tomorrow, of one more hour that was never needed. It feeds on no single failing, but on the long, quiet sum of them, and it is well content on days that pass unmarked. Know this also: it cannot be slain for good. Each dawn it returns, as surely as the choice returns to you.</p><p>There is no final victory over it, only the victory of today: the instrument lifted, the page turned, the work begun. And on the days it is not met, it does not gloat. It simply stays.</p></article>
+    <img class="about-divider" src="assets/divider.png" alt="">
+    <article><h3><img src="assets/object-ember.png" alt="">What this is</h3><p>A seven-day reset. Four things, every day, done in real life. Nothing here asks for more of your time.</p></article>
+    <img class="about-divider" src="assets/divider.png" alt="">
+    <article><h3><img src="assets/object-bloom.png" alt="">Why</h3><p>Classic monster-raising games make progress visible: you watch something grow because of what you did. Real practice doesn't give you that. A week of warm-ups looks like nothing. This borrows the visual payoff and leaves out everything else.</p></article>
+    <img class="about-divider" src="assets/divider.png" alt="">
+    <article><h3><img src="assets/object-tide.png" alt="">How it works</h3><p>There is nothing to do in this world. No coins, no shop, no quests, no exploring. Tick what you actually did. Complete all four and the sword forges, the ghost falls, and your creature grows. Miss a day and it simply doesn't. Ticks are on your honour; a false one only costs you. You live your life. This only reflects it.</p></article>
+    <a class="demo-link" href="?demo=1">Try the seven-day demo</a>
+  </section>
+  <section id="demo-oath" class="about demo-oath" hidden aria-label="The Oath"></section>
   <script src="app.js"></script>
 </body>
 </html>

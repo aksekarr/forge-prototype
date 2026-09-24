@@ -25,17 +25,28 @@ const ANIMATION_TIMINGS = {
   strikeHitStop: 120, strikeGlitch: 800, strikeFade: 250,
   hatchRock: 2000, hatchPause: 500, hatchJolt: 2500, hatchMotion: 5000, hatchFlash: 300, hatchLand: 700,
   evolveGather: 1500, evolveSilhouetteHold: 500, evolveFlicker: 3000, evolveFlash: 300, evolveReveal: 1700, evolveEmbers: 2000,
+  sceneShake: 300,
   layoutGhostReturn: 1500,
   finalFlash: 420,
 };
+const FRAME_OPENING_INSETS = { top: 4.878, right: 6.442, bottom: 5.327, left: 6.442 };
+const DEMO_OATH_SCROLL_DURATION = 2000;
+const DEMO_OATH_FADE_DURATION = 1200;
 Object.entries(ANIMATION_TIMINGS).forEach(([name, milliseconds]) => {
   document.documentElement.style.setProperty(`--${name.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}`, `${milliseconds}ms`);
 });
+Object.entries(FRAME_OPENING_INSETS).forEach(([edge, value]) => {
+  document.documentElement.style.setProperty(`--frame-${edge}`, `${value}%`);
+});
+document.documentElement.style.setProperty('--demo-oath-fade-duration', `${DEMO_OATH_FADE_DURATION}ms`);
 
 const TASKS = ['Warm-ups', 'Hey Joe practice', 'Logic session', 'Read'];
+const DEMO_TASKS = ['Work out', 'Read 10 pages', 'Practise your craft'];
 const STORAGE_KEY = 'seven-days-prototype';
 const CREATURE_SCALE = 0.46;
 const SWORD_REVEALS = [0, 22, 40, 70, 100];
+const DEMO_SWORD_REVEALS = [0, 40, 70, 100];
+const DEMO_STATE_VERSION = 1;
 const CREATURES = [
   { file: 'egg.png', width: 829 },
   ...Array.from({ length: 7 }, (_, index) => ({ file: `stage-${index + 1}.png`, width: [456, 509, 648, 919, 974, 1056, 1193][index] })),
@@ -46,9 +57,16 @@ const EGG_WIDTH_PERCENT = ((STAGE_ONE.width / 1024) * CREATURE_SCALE * (442 / 45
 
 const params = new URLSearchParams(window.location.search);
 const isLayoutMode = params.get('layout') === '1';
+const isDemoMode = params.get('demo') === '1';
+const ACTIVE_STORAGE_KEY = isDemoMode ? `${STORAGE_KEY}-demo` : STORAGE_KEY;
 if (!isLayoutMode) document.querySelector('#layout-tools').remove();
+if (!isDemoMode) {
+  document.querySelector('#demo-panel').remove();
+  document.querySelector('#demo-badge').remove();
+  document.querySelector('#demo-oath').remove();
+}
 if (params.get('reset') === '1' && !isLayoutMode) {
-  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(ACTIVE_STORAGE_KEY);
   window.location.replace(`${window.location.pathname}${params.has('today') ? `?today=${params.get('today')}` : ''}`);
 }
 
@@ -58,16 +76,25 @@ function localDateString(date = new Date()) {
 }
 
 const override = /^\d{4}-\d{2}-\d{2}$/.test(params.get('today') || '') ? params.get('today') : null;
-const today = override || localDateString();
+const realToday = override || localDateString();
 
 function loadState() {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) return JSON.parse(stored);
-  const state = { firstDay: today, days: {} };
-  if (!isLayoutMode) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  const stored = localStorage.getItem(ACTIVE_STORAGE_KEY);
+  if (stored) {
+    const parsed = JSON.parse(stored);
+    const hasCurrentDemoTasks = parsed.demoStateVersion === DEMO_STATE_VERSION
+      && Array.isArray(parsed.demoTaskStructure)
+      && parsed.demoTaskStructure.length === DEMO_TASKS.length
+      && parsed.demoTaskStructure.every((task, index) => task === DEMO_TASKS[index]);
+    if (!isDemoMode || hasCurrentDemoTasks) return parsed;
+  }
+  const firstDay = isDemoMode ? localDateString() : realToday;
+  const state = { firstDay, days: {}, ...(isDemoMode ? { simulatedDate: firstDay, demoStateVersion: DEMO_STATE_VERSION, demoTaskStructure: [...DEMO_TASKS] } : {}) };
+  if (!isLayoutMode) localStorage.setItem(ACTIVE_STORAGE_KEY, JSON.stringify(state));
   return state;
 }
 let state = loadState();
+let today = isDemoMode ? state.simulatedDate : realToday;
 let activeSequence = null;
 let layoutPoints = null;
 let layoutSceneName = null;
@@ -78,15 +105,17 @@ let layoutMode = 'sprites';
 let layoutGhostCooldown = false;
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-function save() { if (!isLayoutMode) localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function save() { if (!isLayoutMode) localStorage.setItem(ACTIVE_STORAGE_KEY, JSON.stringify(state)); }
 function dayOffset(date) {
   const [y, m, d] = date.split('-').map(Number);
   const [fy, fm, fd] = state.firstDay.split('-').map(Number);
   return Math.round((new Date(y, m - 1, d) - new Date(fy, fm - 1, fd)) / 86400000);
 }
 function todayTasks() { return state.days[today]?.tasks || {}; }
-function completedCount(tasks) { return TASKS.filter(task => tasks[task]).length; }
-function isComplete(tasks) { return completedCount(tasks) === TASKS.length; }
+function currentTasks() { return isDemoMode ? DEMO_TASKS : TASKS; }
+function currentSwordReveals() { return isDemoMode ? DEMO_SWORD_REVEALS : SWORD_REVEALS; }
+function completedCount(tasks) { return currentTasks().filter(task => tasks[task]).length; }
+function isComplete(tasks) { return completedCount(tasks) === currentTasks().length; }
 function completedDays() { return Object.values(state.days).filter(day => isComplete(day.tasks || {})).length; }
 function stage() { return Math.min(7, completedDays()); }
 function recordDate(offset) {
@@ -97,6 +126,11 @@ function recordDate(offset) {
 function formatDate(date) {
   const [y, m, d] = date.split('-').map(Number);
   return new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'short', day: 'numeric' }).format(new Date(y, m - 1, d));
+}
+
+function addLocalDays(dateString, days) {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return localDateString(new Date(year, month - 1, day + days));
 }
 
 function copyPoints(points) {
@@ -208,6 +242,15 @@ function creatureCenter() {
   };
 }
 
+function creatureGroundPoint() {
+  const sceneBox = document.querySelector('#scene').getBoundingClientRect();
+  const creatureBox = document.querySelector('#creature').getBoundingClientRect();
+  return {
+    x: ((creatureBox.left + creatureBox.width / 2 - sceneBox.left) / sceneBox.width) * 100,
+    y: ((creatureBox.bottom - sceneBox.top) / sceneBox.height) * 100,
+  };
+}
+
 function setEffectCenter(point) {
   const scene = document.querySelector('#scene');
   scene.style.setProperty('--effect-x', `${point.x}%`);
@@ -233,6 +276,13 @@ function showGhostGlitch() {
   glitch.innerHTML = Array.from({ length: 6 }, (_, index) => `<i class="ghost-slice" style="--slice:${index};--delay:${index * 35}ms;top:${index * 16.7}%"></i>`).join('');
 }
 function clearGhostGlitch() { document.querySelector('#ghost-glitch').replaceChildren(); }
+
+function playSceneShake() {
+  const scene = document.querySelector('#scene');
+  scene.classList.remove('scene-shake');
+  void scene.offsetWidth;
+  scene.classList.add('scene-shake');
+}
 
 const ambient = { particles: [], fireflies: [], petals: [], sceneName: '', last: 0, nextGlint: 0, nextCreature: 0, nextSword: 0, nextGhost: 0, frame: 0 };
 const randomBetween = ([min, max]) => min + Math.random() * (max - min);
@@ -372,7 +422,7 @@ function render() {
   renderAmbientMarkers();
   creature.classList.toggle('egg-idle', displayStage === 0 && !activeSequence && !isLayoutMode);
   creature.classList.toggle('idle', displayStage > 0 && !activeSequence && !isLayoutMode);
-  const revealed = isLayoutMode ? 100 : activeSequence?.revealOverride ?? SWORD_REVEALS[completedCount(tasks)];
+  const revealed = isLayoutMode ? 100 : activeSequence?.revealOverride ?? currentSwordReveals()[completedCount(tasks)];
   sword.style.setProperty('--sword-clip', `${100 - revealed}%`);
   sword.classList.toggle('partial', !activeSequence && !isLayoutMode && revealed > 0 && revealed < 100);
   ghost.hidden = (!isLayoutMode && isTodayComplete && !activeSequence) || Boolean(activeSequence?.ghostGone) || (isLayoutMode && layoutGhostCooldown);
@@ -392,15 +442,17 @@ function render() {
 
   document.querySelector('#day-number').textContent = offset + 1;
   document.querySelector('#date-label').textContent = formatDate(today);
-  document.querySelector('#task-list').innerHTML = TASKS.map(task => {
+  document.querySelector('#task-list').innerHTML = currentTasks().map(task => {
     const checked = Boolean(tasks[task]);
     return `<div class="task"><span>${task}</span><button class="tick" data-task="${task}" aria-pressed="${checked}" aria-label="${checked ? `Undo ${task}` : `Complete ${task}` }" ${activeSequence || isLayoutMode ? 'disabled' : ''}>✓</button></div>`;
   }).join('');
   document.querySelector('#record').innerHTML = Array.from({ length: 7 }, (_, index) => {
     const date = recordDate(index);
     const count = completedCount(state.days[date]?.tasks || {});
-    return `<div class="record-cell ${date === today ? 'current' : ''}"><span class="record-day">Day ${index + 1}</span><span class="record-value">${count} / 4</span></div>`;
+    return `<div class="record-cell ${date === today ? 'current' : ''}"><span class="record-day">Day ${index + 1}</span><span class="record-value">${count} / ${currentTasks().length}</span></div>`;
   }).join('');
+  const nextDayButton = document.querySelector('#next-demo-day');
+  if (isDemoMode && nextDayButton) nextDayButton.disabled = Boolean(activeSequence);
 }
 
 document.querySelector('#task-list').addEventListener('click', event => {
@@ -422,22 +474,22 @@ document.querySelector('#task-list').addEventListener('click', event => {
 
 async function runForge(fromCount, toCount, beforeStage, done) {
   if (reduceMotion) {
-    activeSequence = { kind: 'reduced-crossfade', beforeStage, revealOverride: SWORD_REVEALS[toCount] };
+    activeSequence = { kind: 'reduced-crossfade', beforeStage, revealOverride: currentSwordReveals()[toCount] };
     render();
     await wait(ANIMATION_TIMINGS.forgePulse);
     done();
     return;
   }
-  activeSequence = { kind: 'forge-pulse', beforeStage, revealOverride: SWORD_REVEALS[fromCount] };
+  activeSequence = { kind: 'forge-pulse', beforeStage, revealOverride: currentSwordReveals()[fromCount] };
   render();
   requestAnimationFrame(() => {
-    const edge = swordEdgePoint(SWORD_REVEALS[fromCount]);
+    const edge = swordEdgePoint(currentSwordReveals()[fromCount]);
     const scene = document.querySelector('#scene');
     scene.style.setProperty('--sword-edge-x', `${edge.x}%`);
     scene.style.setProperty('--sword-edge-y', `${edge.y}%`);
-    setSwordShimmer(SWORD_REVEALS[fromCount]);
+    setSwordShimmer(currentSwordReveals()[fromCount]);
     for (let index = 0; index < 8 + Math.floor(Math.random() * 5); index += 1) {
-      const point = swordSparkPoint(SWORD_REVEALS[fromCount]);
+      const point = swordSparkPoint(currentSwordReveals()[fromCount]);
       particleBurst(point.x, point.y, 1);
     }
   });
@@ -446,7 +498,7 @@ async function runForge(fromCount, toCount, beforeStage, done) {
     document.querySelector('#sword-shimmer'),
     document.querySelector('#sword-edge'),
   ]);
-  activeSequence = { kind: 'forge-cool', beforeStage, revealOverride: SWORD_REVEALS[toCount] };
+  activeSequence = { kind: 'forge-cool', beforeStage, revealOverride: currentSwordReveals()[toCount] };
   render();
   await waitForVisualCompletion([document.querySelector('#sword')]);
   done();
@@ -470,7 +522,7 @@ async function runCompletion(countBefore) {
     render();
     return;
   }
-  await runForge(countBefore, 4, beforeStage, async () => {
+  await runForge(countBefore, currentTasks().length, beforeStage, async () => {
     await runStrike(beforeStage);
     if (beforeStage === 7) { activeSequence = null; render(); return; }
     if (beforeStage === 0) await runHatch(0, 1);
@@ -557,7 +609,13 @@ async function runHatch(beforeStage, targetStage) {
   }
   activeSequence = { kind: 'hatching', beforeStage, targetStage, revealOverride: 100, ghostGone: true, swordGone: true };
   render();
-  await wait(ANIMATION_TIMINGS.hatchRock + ANIMATION_TIMINGS.hatchPause + ANIMATION_TIMINGS.hatchJolt);
+  await wait(ANIMATION_TIMINGS.hatchRock + ANIMATION_TIMINGS.hatchPause);
+  const joltCount = 6;
+  for (let index = 0; index < joltCount; index += 1) {
+    const eggPoint = creatureCenter();
+    particleBurst(eggPoint.x, eggPoint.y, index + 2);
+    await wait(ANIMATION_TIMINGS.hatchJolt / joltCount);
+  }
   activeSequence.kind = 'hatch-flash';
   render();
   const shellPoint = creatureCenter();
@@ -570,6 +628,12 @@ async function runHatch(beforeStage, targetStage) {
   setEffectCenter(point);
   particleBurst(point.x, point.y, 16, true);
   await wait(ANIMATION_TIMINGS.hatchLand);
+  activeSequence = { kind: 'hatch-aftermath', beforeStage: targetStage, revealOverride: 100, ghostGone: true, swordGone: true };
+  render();
+  setEffectCenter(creatureGroundPoint());
+  const landedPoint = creatureCenter();
+  particleBurst(landedPoint.x, landedPoint.y, 8, false, 'ember', ['#ffd16a', '#f09a42', '#ffdc92'], true);
+  await wait(ANIMATION_TIMINGS.evolveEmbers);
 }
 
 async function runEvolution(beforeStage, targetStage) {
@@ -688,11 +752,94 @@ function setupLayoutTools() {
   });
 }
 
+function setupDemoMode() {
+  if (!isDemoMode) return;
+  document.body.classList.add('demo-mode');
+  document.querySelector('#demo-panel').hidden = false;
+  document.querySelector('#demo-badge').hidden = false;
+  const demoOath = document.querySelector('#demo-oath');
+  const oathCopy = document.querySelector('.app-content .oath-panel').cloneNode(true);
+  oathCopy.removeAttribute('aria-labelledby');
+  oathCopy.setAttribute('aria-label', 'The Oath');
+  oathCopy.querySelector('[id="oath-title"]').removeAttribute('id');
+  demoOath.append(oathCopy);
+  let oathScrollFrame = null;
+  let removeOathScrollListeners = () => {};
+  const stopOathScroll = () => {
+    if (oathScrollFrame === null) return;
+    cancelAnimationFrame(oathScrollFrame);
+    oathScrollFrame = null;
+    removeOathScrollListeners();
+  };
+  const scrollToDemoOath = () => {
+    stopOathScroll();
+    const heading = demoOath.querySelector('h2');
+    const target = Math.max(0, window.scrollY + heading.getBoundingClientRect().top - 72);
+    if (reduceMotion) {
+      window.scrollTo(0, target);
+      return;
+    }
+    const start = window.scrollY;
+    const expectedPositions = [];
+    const rememberPosition = position => {
+      expectedPositions.push(position);
+      if (expectedPositions.length > 6) expectedPositions.shift();
+    };
+    const abortEvents = ['wheel', 'touchstart', 'pointerdown', 'keydown'];
+    const onScroll = () => {
+      if (!expectedPositions.some(position => Math.abs(window.scrollY - position) < 2)) stopOathScroll();
+    };
+    abortEvents.forEach(type => window.addEventListener(type, stopOathScroll, { passive: true }));
+    window.addEventListener('scroll', onScroll, { passive: true });
+    removeOathScrollListeners = () => {
+      abortEvents.forEach(type => window.removeEventListener(type, stopOathScroll));
+      window.removeEventListener('scroll', onScroll);
+      removeOathScrollListeners = () => {};
+    };
+    const startedAt = performance.now();
+    const step = now => {
+      const progress = Math.min(1, (now - startedAt) / DEMO_OATH_SCROLL_DURATION);
+      const eased = progress < .5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+      const position = start + (target - start) * eased;
+      rememberPosition(position);
+      window.scrollTo(0, position);
+      if (progress < 1) oathScrollFrame = requestAnimationFrame(step);
+      else {
+        oathScrollFrame = null;
+        removeOathScrollListeners();
+      }
+    };
+    oathScrollFrame = requestAnimationFrame(step);
+  };
+  document.querySelector('#next-demo-day').addEventListener('click', () => {
+    if (activeSequence) return;
+    today = addLocalDays(today, 1);
+    state.simulatedDate = today;
+    save();
+    render();
+  });
+  document.querySelector('#reset-demo').addEventListener('click', () => {
+    localStorage.removeItem(ACTIVE_STORAGE_KEY);
+    const firstDay = localDateString();
+    state = { firstDay, simulatedDate: firstDay, days: {}, demoStateVersion: DEMO_STATE_VERSION, demoTaskStructure: [...DEMO_TASKS] };
+    today = firstDay;
+    save();
+    render();
+  });
+  document.querySelector('#read-demo-oath').addEventListener('click', () => {
+    const firstReveal = demoOath.hidden;
+    demoOath.hidden = false;
+    if (firstReveal && !reduceMotion) demoOath.classList.add('demo-oath-revealing');
+    requestAnimationFrame(scrollToDemoOath);
+  });
+}
+
 if (override) {
   const banner = document.querySelector('#date-override');
   banner.hidden = false;
   banner.textContent = `Testing date: ${override}`;
 }
 setupLayoutTools();
+setupDemoMode();
 render();
 startAmbient();
