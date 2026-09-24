@@ -12,10 +12,14 @@
     <section class="scene-column" aria-label="Today's scene">
       <div id="scene" class="scene">
         <img id="scene-image" class="scene-image" alt="">
+        <div class="scene-dimmer" aria-hidden="true"></div>
         <div id="scene-flash" class="scene-flash" aria-hidden="true"></div>
         <img id="creature" class="sprite creature" alt="Creature">
+        <img id="evolution-form" class="sprite creature evolution-form" alt="" hidden>
         <img id="sword" class="sprite sword" src="assets/sword.png" alt="Sword">
+        <i id="sword-edge" class="sword-edge" aria-hidden="true"></i>
         <img id="ghost" class="sprite ghost" src="assets/ghost.png" alt="Ghost">
+        <div id="particles" class="particles" aria-hidden="true"></div>
       </div>
     </section>
     <section class="side-column" aria-label="Daily tasks and seven-day record">
@@ -31,6 +35,17 @@
       <section class="panel record-panel" aria-labelledby="record-title">
         <h2 id="record-title">Record</h2>
         <div id="record" class="record" aria-label="Seven day record"></div>
+      </section>
+      <section id="layout-tools" class="layout-tools" hidden aria-label="Layout test tools">
+        <label>Preview form <select id="form-preview"></select></label>
+        <p id="layout-readout"></p>
+        <button id="copy-layout" type="button">Copy config</button>
+        <div class="layout-replays">
+          <button type="button" data-replay="forge">Forge</button>
+          <button type="button" data-replay="strike">Strike</button>
+          <button type="button" data-replay="hatch">Hatch</button>
+          <button type="button" data-replay="evolve">Evolve</button>
+        </div>
       </section>
     </section>
   </main>
