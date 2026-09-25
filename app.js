@@ -64,6 +64,8 @@ if (!isDemoMode) {
   document.querySelector('#demo-panel').remove();
   document.querySelector('#demo-badge').remove();
   document.querySelector('#demo-oath').remove();
+} else {
+  document.querySelector('#oath-card').remove();
 }
 if (params.get('reset') === '1' && !isLayoutMode) {
   localStorage.removeItem(ACTIVE_STORAGE_KEY);
@@ -103,6 +105,7 @@ let layoutGlowPoints = [];
 let layoutGlintPoints = [];
 let layoutMode = 'sprites';
 let layoutGhostCooldown = false;
+let hasInitialPlacement = false;
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function save() { if (!isLayoutMode) localStorage.setItem(ACTIVE_STORAGE_KEY, JSON.stringify(state)); }
@@ -151,11 +154,16 @@ function updateLayoutReadout(sceneConfig) {
 function applyPositions(sceneConfig) {
   const points = isLayoutMode ? layoutPoints : sceneConfig;
   const scene = document.querySelector('#scene');
+  const bounds = scene.getBoundingClientRect();
   for (const name of ['creature', 'ghost', 'sword']) {
-    scene.style.setProperty(`--${name}-x`, `${points[name].x}%`);
-    scene.style.setProperty(`--${name}-y`, `${points[name].y}%`);
+    scene.style.setProperty(`--${name}-x`, `${bounds.width * points[name].x / 100}px`);
+    scene.style.setProperty(`--${name}-y`, `${bounds.height * points[name].y / 100}px`);
   }
   updateLayoutReadout(sceneConfig);
+}
+
+function recalculateScenePositions() {
+  applyPositions(currentSceneConfig());
 }
 
 function currentSceneConfig() { return SCENES[Math.max(0, dayOffset(today)) % SCENES.length]; }
@@ -327,11 +335,7 @@ function drawAmbient(timestamp) {
   const scene = document.querySelector('#scene');
   const canvas = document.querySelector('#ambient-canvas');
   const sceneConfig = currentSceneConfig();
-  const rect = scene.getBoundingClientRect();
-  const pixelRatio = window.devicePixelRatio || 1;
-  if (canvas.width !== Math.round(rect.width * pixelRatio) || canvas.height !== Math.round(rect.height * pixelRatio)) {
-    canvas.width = Math.round(rect.width * pixelRatio); canvas.height = Math.round(rect.height * pixelRatio);
-  }
+  const { rect, pixelRatio } = resizeAmbientCanvas();
   const context = canvas.getContext('2d');
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   context.clearRect(0, 0, rect.width, rect.height);
@@ -386,6 +390,56 @@ function drawAmbient(timestamp) {
 function startAmbient() { if (!ambient.frame && !document.hidden) ambient.frame = requestAnimationFrame(drawAmbient); }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { ambient.last = 0; startAmbient(); } });
 
+function resizeAmbientCanvas() {
+  const scene = document.querySelector('#scene');
+  const canvas = document.querySelector('#ambient-canvas');
+  const rect = scene.getBoundingClientRect();
+  const pixelRatio = window.devicePixelRatio || 1;
+  const width = Math.round(rect.width * pixelRatio);
+  const height = Math.round(rect.height * pixelRatio);
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+  return { rect, pixelRatio };
+}
+
+function recalculateSceneLayout() {
+  recalculateScenePositions();
+  resizeAmbientCanvas();
+  ambient.last = 0;
+  startAmbient();
+}
+
+function waitForImageDecode(image) {
+  if (!image.currentSrc && !image.src) return Promise.resolve();
+  const loaded = image.complete && image.naturalWidth
+    ? Promise.resolve()
+    : new Promise(resolve => {
+      image.addEventListener('load', resolve, { once: true });
+      image.addEventListener('error', resolve, { once: true });
+    });
+  return loaded.then(() => image.decode ? image.decode().catch(() => undefined) : undefined);
+}
+
+async function placeInitialScene() {
+  const scene = document.querySelector('#scene');
+  const currentSprites = ['#creature', '#sword', '#ghost']
+    .map(selector => document.querySelector(selector));
+  const evolutionForm = document.querySelector('#evolution-form');
+  if (!evolutionForm.hidden) currentSprites.push(evolutionForm);
+  await Promise.all([
+    waitForImageDecode(document.querySelector('#scene-image')),
+    waitForImageDecode(document.querySelector('.scene-frame')),
+    ...currentSprites.map(waitForImageDecode),
+    document.fonts?.ready ?? Promise.resolve(),
+  ]);
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  recalculateSceneLayout();
+  hasInitialPlacement = true;
+  scene.classList.add('sprites-positioned');
+}
+
 function renderAmbientMarkers() {
   const layer = document.querySelector('#ambient-markers');
   if (!isLayoutMode || layoutMode === 'sprites') { layer.replaceChildren(); return; }
@@ -413,12 +467,13 @@ function render() {
   const ghost = document.querySelector('#ghost');
   const evolutionForm = document.querySelector('#evolution-form');
 
-  scene.className = `scene${isLayoutMode ? ` layout-mode${layoutMode === 'sprites' ? '' : ' layout-points'}` : ''}${activeSequence ? ` ${activeSequence.kind}` : ''}${isLayoutMode && activeSequence ? ' replaying' : ''}${reduceMotion ? ' reduced-motion' : ''}`;
+  scene.className = `scene${hasInitialPlacement ? ' sprites-positioned' : ''}${isLayoutMode ? ` layout-mode${layoutMode === 'sprites' ? '' : ' layout-points'}` : ''}${activeSequence ? ` ${activeSequence.kind}` : ''}${isLayoutMode && activeSequence ? ' replaying' : ''}${reduceMotion ? ' reduced-motion' : ''}`;
   sceneImage.src = `assets/${sceneConfig.file}`;
   creature.src = `assets/${creatureConfig.file}`;
   const width = displayStage === 0 ? EGG_WIDTH_PERCENT : (creatureConfig.width / 1024) * CREATURE_SCALE * 100;
   creature.style.setProperty('--creature-width', `${width}%`);
   applyPositions(sceneConfig);
+  resizeAmbientCanvas();
   renderAmbientMarkers();
   creature.classList.toggle('egg-idle', displayStage === 0 && !activeSequence && !isLayoutMode);
   creature.classList.toggle('idle', displayStage > 0 && !activeSequence && !isLayoutMode);
@@ -752,17 +807,7 @@ function setupLayoutTools() {
   });
 }
 
-function setupDemoMode() {
-  if (!isDemoMode) return;
-  document.body.classList.add('demo-mode');
-  document.querySelector('#demo-panel').hidden = false;
-  document.querySelector('#demo-badge').hidden = false;
-  const demoOath = document.querySelector('#demo-oath');
-  const oathCopy = document.querySelector('.app-content .oath-panel').cloneNode(true);
-  oathCopy.removeAttribute('aria-labelledby');
-  oathCopy.setAttribute('aria-label', 'The Oath');
-  oathCopy.querySelector('[id="oath-title"]').removeAttribute('id');
-  demoOath.append(oathCopy);
+function createOathScroll(oath) {
   let oathScrollFrame = null;
   let removeOathScrollListeners = () => {};
   const stopOathScroll = () => {
@@ -771,9 +816,9 @@ function setupDemoMode() {
     oathScrollFrame = null;
     removeOathScrollListeners();
   };
-  const scrollToDemoOath = () => {
+  return () => {
     stopOathScroll();
-    const heading = demoOath.querySelector('h2');
+    const heading = oath.querySelector('h2');
     const target = Math.max(0, window.scrollY + heading.getBoundingClientRect().top - 72);
     if (reduceMotion) {
       window.scrollTo(0, target);
@@ -811,6 +856,34 @@ function setupDemoMode() {
     };
     oathScrollFrame = requestAnimationFrame(step);
   };
+}
+
+function setupOathReveal(button, oath) {
+  const scrollToOath = createOathScroll(oath);
+  button.addEventListener('click', () => {
+    const firstReveal = oath.hidden;
+    oath.hidden = false;
+    if (firstReveal && !reduceMotion) oath.classList.add('demo-oath-revealing');
+    requestAnimationFrame(scrollToOath);
+  });
+}
+
+function setupNormalOath() {
+  if (isDemoMode) return;
+  setupOathReveal(document.querySelector('#read-oath'), document.querySelector('#shared-oath'));
+}
+
+function setupDemoMode() {
+  if (!isDemoMode) return;
+  document.body.classList.add('demo-mode');
+  document.querySelector('#demo-panel').hidden = false;
+  document.querySelector('#demo-badge').hidden = false;
+  const demoOath = document.querySelector('#demo-oath');
+  const oathCopy = document.querySelector('#shared-oath .oath-panel').cloneNode(true);
+  oathCopy.removeAttribute('aria-labelledby');
+  oathCopy.setAttribute('aria-label', 'The Oath');
+  oathCopy.querySelector('[id="oath-title"]').removeAttribute('id');
+  demoOath.append(oathCopy);
   document.querySelector('#next-demo-day').addEventListener('click', () => {
     if (activeSequence) return;
     today = addLocalDays(today, 1);
@@ -826,12 +899,7 @@ function setupDemoMode() {
     save();
     render();
   });
-  document.querySelector('#read-demo-oath').addEventListener('click', () => {
-    const firstReveal = demoOath.hidden;
-    demoOath.hidden = false;
-    if (firstReveal && !reduceMotion) demoOath.classList.add('demo-oath-revealing');
-    requestAnimationFrame(scrollToDemoOath);
-  });
+  setupOathReveal(document.querySelector('#read-demo-oath'), demoOath);
 }
 
 if (override) {
@@ -840,6 +908,9 @@ if (override) {
   banner.textContent = `Testing date: ${override}`;
 }
 setupLayoutTools();
+setupNormalOath();
 setupDemoMode();
 render();
+new ResizeObserver(() => recalculateSceneLayout()).observe(document.querySelector('#scene'));
+placeInitialScene();
 startAmbient();

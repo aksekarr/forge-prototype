@@ -35,6 +35,8 @@ button { font: inherit; }
 .ambient-marker { position: absolute; width: 12px; height: 12px; padding: 0; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; box-shadow: 0 0 0 1px #313; }
 .ambient-marker.glows { background: #ffc86f; } .ambient-marker.glints { background: #89d9ff; }
 .sprite { position: absolute; z-index: 2; transform-origin: bottom center; image-rendering: crisp-edges; image-rendering: pixelated; }
+.scene:not(.sprites-positioned) .creature, .scene:not(.sprites-positioned) .ghost, .scene:not(.sprites-positioned) .sword { opacity: 0; }
+.scene.sprites-positioned .creature, .scene.sprites-positioned .ghost, .scene.sprites-positioned .sword { opacity: 1; transition: opacity .3s ease-out; }
 
 .creature { width: var(--creature-width); left: var(--creature-x); top: var(--creature-y); transform: translate(-50%, -100%); }
 .creature.idle { animation: creature-breathe 3s ease-in-out infinite; }
@@ -199,6 +201,8 @@ h2 { color: #71320f; font-size: 19px; text-transform: uppercase; }
 .demo-panel { max-width: 260px; align-self: start; }
 .demo-panel h2 { margin-bottom: 10px; }
 .demo-panel p { margin: 0; color: #392016; font-size: 18px; line-height: 1.18; }
+.oath-card { width: 100%; max-width: 260px; align-self: start; margin-top: 2.25vh; }
+.oath-card h2 { margin-bottom: 10px; }
 .oath-panel { width: 100%; max-width: 360px; align-self: start; margin-top: 2.25vh; }
 .oath-panel p { margin: 0; color: #392016; font-size: clamp(17px, 1.35vw, 19px); line-height: 1.23; }
 .oath-panel p + p { margin-top: 16px; }
@@ -206,9 +210,9 @@ h2 { color: #71320f; font-size: 19px; text-transform: uppercase; }
 .oath-verse span { display: block; }
 .oath-verse + .oath-verse { margin-top: 22px; }
 .oath-final { margin-top: 30px !important; font-weight: bold; text-align: center; }
-.demo-mode .app-content .oath-panel { display: none !important; }
 .demo-actions { display: grid; gap: 8px; margin-top: 16px; }
 .demo-actions button { border: 2px solid #603014; background: #c96b28; color: #fff4cf; box-shadow: 2px 2px 0 #3a1d0d; cursor: pointer; font-family: "Pixelify Sans", system-ui, sans-serif; padding: 8px 10px; }
+.secondary-action { border: 2px solid #603014; background: transparent; color: #71320f; box-shadow: none; cursor: pointer; font-family: "Pixelify Sans", system-ui, sans-serif; padding: 8px 10px; }
 .demo-actions .secondary-action { background: transparent; color: #71320f; box-shadow: none; }
 .demo-actions button:disabled { cursor: default; opacity: .55; }
 .tick { border-color: #633014; background: #f9eac2; }
@@ -240,6 +244,7 @@ h2 { color: #71320f; font-size: 19px; text-transform: uppercase; }
   .scene-frame-wrap { width: 100%; height: auto; aspect-ratio: 1009 / 1558; margin: 0 auto 26px; }
   .side-column { max-width: none; }
   .demo-panel { max-width: none; margin: 0 0 20px; }
+  .oath-card { margin: 0 auto 20px; }
   .oath-panel { max-width: none; margin-top: 24px; }
   .about { width: calc(100% - 28px); margin: 38px auto 50px; }
 }
@@ -254,7 +259,7 @@ h2 { color: #71320f; font-size: 19px; text-transform: uppercase; }
 }
 
 @media (min-width: 900px) and (max-width: 1319px) {
-  .oath-panel { grid-column: 1 / -1; grid-row: 2; max-width: none; margin-top: 0; }
+  .oath-card { grid-column: 1 / -1; grid-row: 2; justify-self: center; margin: 0 0 20px; }
   .demo-mode .app-content { row-gap: 28px; }
   .demo-mode .scene-column { grid-column: 1; grid-row: 1 / span 2; }
   .demo-mode .demo-panel { grid-column: 2; grid-row: 1; margin-top: 2.25vh; }
@@ -265,6 +270,6 @@ h2 { color: #71320f; font-size: 19px; text-transform: uppercase; }
   .app-content { grid-template-columns: minmax(0, 1fr) 552px minmax(0, 1fr); gap: clamp(16px, 2.4vw, 30px); }
   .scene-column { grid-column: 2; grid-row: 1; }
   .side-column { grid-column: 3; grid-row: 1; justify-self: start; }
-  .oath-panel { grid-column: 1; grid-row: 1; justify-self: end; }
+  .oath-card { grid-column: 1; grid-row: 1; justify-self: end; }
   .demo-mode .demo-panel { grid-column: 1; grid-row: 1; justify-self: end; margin-top: 2.25vh; }
 }
