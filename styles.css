@@ -202,7 +202,7 @@ h2 { color: #71320f; font-size: 19px; text-transform: uppercase; }
 .demo-panel h2 { margin-bottom: 10px; }
 .demo-panel p { margin: 0; color: #392016; font-size: 18px; line-height: 1.18; }
 .oath-card { width: 100%; max-width: 260px; align-self: start; margin-top: 2.25vh; }
-.oath-card h2 { margin-bottom: 10px; }
+.oath-card .secondary-action { width: 100%; }
 .oath-panel { width: 100%; max-width: 360px; align-self: start; margin-top: 2.25vh; }
 .oath-panel p { margin: 0; color: #392016; font-size: clamp(17px, 1.35vw, 19px); line-height: 1.23; }
 .oath-panel p + p { margin-top: 16px; }
@@ -213,6 +213,7 @@ h2 { color: #71320f; font-size: 19px; text-transform: uppercase; }
 .demo-actions { display: grid; gap: 8px; margin-top: 16px; }
 .demo-actions button { border: 2px solid #603014; background: #c96b28; color: #fff4cf; box-shadow: 2px 2px 0 #3a1d0d; cursor: pointer; font-family: "Pixelify Sans", system-ui, sans-serif; padding: 8px 10px; }
 .secondary-action { border: 2px solid #603014; background: transparent; color: #71320f; box-shadow: none; cursor: pointer; font-family: "Pixelify Sans", system-ui, sans-serif; padding: 8px 10px; }
+#read-oath { border: 2px solid #603014; background: #c96b28; color: #fff4cf; box-shadow: 2px 2px 0 #3a1d0d; cursor: pointer; font-family: "Pixelify Sans", system-ui, sans-serif; padding: 8px 10px; }
 .demo-actions .secondary-action { background: transparent; color: #71320f; box-shadow: none; }
 .demo-actions button:disabled { cursor: default; opacity: .55; }
 .tick { border-color: #633014; background: #f9eac2; }
