@@ -825,20 +825,10 @@ function createOathScroll(oath) {
       return;
     }
     const start = window.scrollY;
-    const expectedPositions = [];
-    const rememberPosition = position => {
-      expectedPositions.push(position);
-      if (expectedPositions.length > 6) expectedPositions.shift();
-    };
     const abortEvents = ['wheel', 'touchstart', 'pointerdown', 'keydown'];
-    const onScroll = () => {
-      if (!expectedPositions.some(position => Math.abs(window.scrollY - position) < 2)) stopOathScroll();
-    };
     abortEvents.forEach(type => window.addEventListener(type, stopOathScroll, { passive: true }));
-    window.addEventListener('scroll', onScroll, { passive: true });
     removeOathScrollListeners = () => {
       abortEvents.forEach(type => window.removeEventListener(type, stopOathScroll));
-      window.removeEventListener('scroll', onScroll);
       removeOathScrollListeners = () => {};
     };
     const startedAt = performance.now();
@@ -846,7 +836,6 @@ function createOathScroll(oath) {
       const progress = Math.min(1, (now - startedAt) / DEMO_OATH_SCROLL_DURATION);
       const eased = progress < .5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
       const position = start + (target - start) * eased;
-      rememberPosition(position);
       window.scrollTo(0, position);
       if (progress < 1) oathScrollFrame = requestAnimationFrame(step);
       else {
