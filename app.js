@@ -47,9 +47,25 @@ const CREATURE_SCALE = 0.46;
 const SWORD_REVEALS = [0, 22, 40, 70, 100];
 const DEMO_SWORD_REVEALS = [0, 40, 70, 100];
 const DEMO_STATE_VERSION = 1;
+const STAGE_TWO_IDLE_SEQUENCE = Object.freeze([
+  [1, 500], [2, 450], [1, 350], [4, 450], [1, 500],
+  [2, 450], [3, 140], [1, 350], [4, 450],
+]);
+const STAGE_TWO_IDLE_FILES = Object.freeze(
+  Array.from({ length: 4 }, (_, index) => `stage-2-idle-${index + 1}.png`),
+);
+const STAGE_TWO_IDLE_CANVAS_WIDTH = 418;
+const STAGE_TWO_ORIGINAL_WIDTH = 509;
+const STAGE_TWO_ORIGINAL_OPAQUE_HEIGHT = 532;
+const STAGE_TWO_IDLE_OPAQUE_HEIGHT = 433;
+const STAGE_TWO_IDLE_WIDTH_SCALE = (STAGE_TWO_ORIGINAL_OPAQUE_HEIGHT / STAGE_TWO_IDLE_OPAQUE_HEIGHT)
+  * (STAGE_TWO_IDLE_CANVAS_WIDTH / STAGE_TWO_ORIGINAL_WIDTH);
 const CREATURES = [
   { file: 'egg.png', width: 829 },
-  ...Array.from({ length: 7 }, (_, index) => ({ file: `stage-${index + 1}.png`, width: [456, 509, 648, 919, 974, 1056, 1193][index] })),
+  ...Array.from({ length: 7 }, (_, index) => ({
+    file: index === 1 ? STAGE_TWO_IDLE_FILES[0] : `stage-${index + 1}.png`,
+    width: [456, STAGE_TWO_ORIGINAL_WIDTH * STAGE_TWO_IDLE_WIDTH_SCALE, 648, 919, 974, 1056, 1193][index],
+  })),
 ];
 
 const STAGE_ONE = CREATURES[1];
@@ -107,6 +123,58 @@ let layoutMode = 'sprites';
 let layoutGhostCooldown = false;
 let hasInitialPlacement = false;
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const stageTwoIdleFrames = STAGE_TWO_IDLE_FILES.map((file, index) => {
+  const image = document.createElement('img');
+  image.className = 'sprite creature stage-two stage-two-idle-frame';
+  image.src = `assets/${file}`;
+  image.alt = index === 0 ? 'Creature' : '';
+  image.decoding = 'async';
+  image.loading = 'eager';
+  image.hidden = true;
+  document.querySelector('#evolution-form').before(image);
+  return image;
+});
+let stageTwoIdleStep = 0;
+let stageTwoIdleTimer = null;
+
+function showStageTwoIdleFrame(frameNumber) {
+  stageTwoIdleFrames.forEach((frame, index) => { frame.hidden = index !== frameNumber - 1; });
+}
+
+function stopStageTwoIdleLoop() {
+  if (stageTwoIdleTimer !== null) window.clearTimeout(stageTwoIdleTimer);
+  stageTwoIdleTimer = null;
+  stageTwoIdleStep = 0;
+}
+
+function runStageTwoIdleStep() {
+  const [frameNumber, duration] = STAGE_TWO_IDLE_SEQUENCE[stageTwoIdleStep];
+  showStageTwoIdleFrame(frameNumber);
+  stageTwoIdleStep = (stageTwoIdleStep + 1) % STAGE_TWO_IDLE_SEQUENCE.length;
+  stageTwoIdleTimer = window.setTimeout(() => {
+    stageTwoIdleTimer = null;
+    runStageTwoIdleStep();
+  }, duration);
+}
+
+function updateStageTwoIdleLoop(showFrames, playLoop) {
+  if (!showFrames) {
+    stopStageTwoIdleLoop();
+    stageTwoIdleFrames.forEach(frame => { frame.hidden = true; });
+    return;
+  }
+  if (!playLoop || reduceMotion) {
+    stopStageTwoIdleLoop();
+    showStageTwoIdleFrame(1);
+  } else if (stageTwoIdleTimer === null) {
+    stageTwoIdleStep = 0;
+    runStageTwoIdleStep();
+  }
+}
+
+function visibleCreature() {
+  return stageTwoIdleFrames.find(frame => !frame.hidden) || document.querySelector('#creature');
+}
 
 function save() { if (!isLayoutMode) localStorage.setItem(ACTIVE_STORAGE_KEY, JSON.stringify(state)); }
 function dayOffset(date) {
@@ -243,7 +311,7 @@ function swirlGather(x, y) {
 
 function creatureCenter() {
   const sceneBox = document.querySelector('#scene').getBoundingClientRect();
-  const creatureBox = document.querySelector('#creature').getBoundingClientRect();
+  const creatureBox = visibleCreature().getBoundingClientRect();
   return {
     x: ((creatureBox.left + creatureBox.width / 2 - sceneBox.left) / sceneBox.width) * 100,
     y: ((creatureBox.top + creatureBox.height / 2 - sceneBox.top) / sceneBox.height) * 100,
@@ -252,7 +320,7 @@ function creatureCenter() {
 
 function creatureGroundPoint() {
   const sceneBox = document.querySelector('#scene').getBoundingClientRect();
-  const creatureBox = document.querySelector('#creature').getBoundingClientRect();
+  const creatureBox = visibleCreature().getBoundingClientRect();
   return {
     x: ((creatureBox.left + creatureBox.width / 2 - sceneBox.left) / sceneBox.width) * 100,
     y: ((creatureBox.bottom - sceneBox.top) / sceneBox.height) * 100,
@@ -266,7 +334,7 @@ function setEffectCenter(point) {
 }
 
 function pulseSilhouette() {
-  const visible = document.querySelector('#evolution-form').style.opacity === '1' ? document.querySelector('#evolution-form') : document.querySelector('#creature');
+  const visible = document.querySelector('#evolution-form').style.opacity === '1' ? document.querySelector('#evolution-form') : visibleCreature();
   visible.classList.remove('swap-pulse');
   void visible.offsetWidth;
   visible.classList.add('swap-pulse');
@@ -369,7 +437,7 @@ function drawAmbient(timestamp) {
     context.globalAlpha = AMBIENT_CONFIG.petals.opacity;
     for (const petal of ambient.petals) { petal.y += petal.speed * delta / rect.height * 100; if (petal.y > 105) { petal.y = -4; petal.x = Math.random() * 100; } petal.phase += delta; context.fillStyle = AMBIENT_CONFIG.petals.colour; context.beginPath(); context.ellipse(toX(petal.x + Math.sin(petal.phase) * 2), toY(petal.y), ...AMBIENT_CONFIG.petals.size, petal.phase, 0, Math.PI * 2); context.fill(); }
     if (timestamp >= ambient.nextGlint) { for (const point of ambientScenePoints(sceneConfig, 'glintPoints')) { const radius = AMBIENT_CONFIG.waterGlints.radius; addAmbientParticle({ type: 'glint', x: point.x + (Math.random() - .5) * 2 * radius / rect.width * 100, y: point.y + (Math.random() - .5) * 2 * radius / rect.height * 100, age: 0, life: AMBIENT_CONFIG.waterGlints.lifetime }); } ambient.nextGlint = timestamp + randomBetween(AMBIENT_CONFIG.waterGlints.interval); }
-    const creature = document.querySelector('#creature');
+    const creature = visibleCreature();
     if (timestamp >= ambient.nextCreature && !creature.hidden) { const point = boxPoint(creature); for (let index = 0; index < Math.round(randomBetween(AMBIENT_CONFIG.creatureSparks.count)); index += 1) addAmbientParticle({ type: 'ember', x: point.x + (Math.random() - .5) * AMBIENT_CONFIG.creatureSparks.spread, y: point.y + (Math.random() - .5) * AMBIENT_CONFIG.creatureSparks.spread, age: 0, life: AMBIENT_CONFIG.creatureSparks.lifetime }); ambient.nextCreature = timestamp + randomBetween(AMBIENT_CONFIG.creatureSparks.interval); }
     const sword = document.querySelector('#sword');
     if (timestamp >= ambient.nextSword && !sword.hidden && parseFloat(sword.style.getPropertyValue('--sword-clip') || '100') < 100) { const point = boxPoint(sword); addAmbientParticle({ type: 'sword', x: point.x, y: point.y, age: 0, life: AMBIENT_CONFIG.swordGlint.lifetime }); ambient.nextSword = timestamp + randomBetween(AMBIENT_CONFIG.swordGlint.interval); }
@@ -432,6 +500,7 @@ async function placeInitialScene() {
     waitForImageDecode(document.querySelector('#scene-image')),
     waitForImageDecode(document.querySelector('.scene-frame')),
     ...currentSprites.map(waitForImageDecode),
+    ...stageTwoIdleFrames.map(waitForImageDecode),
     document.fonts?.ready ?? Promise.resolve(),
   ]);
   await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -466,17 +535,22 @@ function render() {
   const sword = document.querySelector('#sword');
   const ghost = document.querySelector('#ghost');
   const evolutionForm = document.querySelector('#evolution-form');
+  const isStageTwo = displayStage === 2;
 
   scene.className = `scene${hasInitialPlacement ? ' sprites-positioned' : ''}${isLayoutMode ? ` layout-mode${layoutMode === 'sprites' ? '' : ' layout-points'}` : ''}${activeSequence ? ` ${activeSequence.kind}` : ''}${isLayoutMode && activeSequence ? ' replaying' : ''}${reduceMotion ? ' reduced-motion' : ''}`;
   sceneImage.src = `assets/${sceneConfig.file}`;
   creature.src = `assets/${creatureConfig.file}`;
+  creature.hidden = isStageTwo;
+  creature.classList.toggle('stage-two', isStageTwo);
   const width = displayStage === 0 ? EGG_WIDTH_PERCENT : (creatureConfig.width / 1024) * CREATURE_SCALE * 100;
   creature.style.setProperty('--creature-width', `${width}%`);
+  stageTwoIdleFrames.forEach(frame => frame.style.setProperty('--creature-width', `${width}%`));
+  updateStageTwoIdleLoop(isStageTwo, !activeSequence);
   applyPositions(sceneConfig);
   resizeAmbientCanvas();
   renderAmbientMarkers();
   creature.classList.toggle('egg-idle', displayStage === 0 && !activeSequence && !isLayoutMode);
-  creature.classList.toggle('idle', displayStage > 0 && !activeSequence && !isLayoutMode);
+  creature.classList.toggle('idle', displayStage > 0 && displayStage !== 2 && !activeSequence && !isLayoutMode);
   const revealed = isLayoutMode ? 100 : activeSequence?.revealOverride ?? currentSwordReveals()[completedCount(tasks)];
   sword.style.setProperty('--sword-clip', `${100 - revealed}%`);
   sword.classList.toggle('partial', !activeSequence && !isLayoutMode && revealed > 0 && revealed < 100);
@@ -487,12 +561,15 @@ function render() {
   if (showEvolution) {
     const target = CREATURES[activeSequence.targetStage];
     evolutionForm.src = `assets/${target.file}`;
+    evolutionForm.classList.toggle('stage-two', activeSequence.targetStage === 2);
     const targetWidth = activeSequence.targetStage === 0 ? EGG_WIDTH_PERCENT : (target.width / 1024) * CREATURE_SCALE * 100;
     evolutionForm.style.setProperty('--creature-width', `${targetWidth}%`);
     evolutionForm.style.opacity = activeSequence.showNew ? '1' : '0';
-    creature.style.opacity = activeSequence.showNew ? '0' : '1';
+    visibleCreature().style.opacity = activeSequence.showNew ? '0' : '1';
   } else {
+    evolutionForm.classList.remove('stage-two');
     creature.style.opacity = '';
+    stageTwoIdleFrames.forEach(frame => { frame.style.opacity = ''; });
   }
 
   document.querySelector('#day-number').textContent = offset + 1;
@@ -713,13 +790,13 @@ async function runEvolution(beforeStage, targetStage) {
     while (performance.now() - start < ANIMATION_TIMINGS.evolveFlicker) {
       const progress = (performance.now() - start) / ANIMATION_TIMINGS.evolveFlicker;
       activeSequence.showNew = showNew = !showNew;
-      document.querySelector('#creature').style.opacity = showNew ? '0' : '1';
+      visibleCreature().style.opacity = showNew ? '0' : '1';
       document.querySelector('#evolution-form').style.opacity = showNew ? '1' : '0';
       pulseSilhouette();
       await wait(500 - 450 * progress);
     }
     activeSequence.showNew = true;
-    document.querySelector('#creature').style.opacity = '0';
+    visibleCreature().style.opacity = '0';
     document.querySelector('#evolution-form').style.opacity = '1';
     pulseSilhouette();
   } else await wait(ANIMATION_TIMINGS.evolveSilhouetteHold + ANIMATION_TIMINGS.evolveFlicker);
@@ -755,8 +832,11 @@ function setupLayoutTools() {
   layoutPreview = Number(preview.value);
   modeSelect.addEventListener('change', () => { layoutMode = modeSelect.value; render(); });
   preview.addEventListener('change', () => { layoutPreview = Number(preview.value); render(); });
-  for (const spriteName of ['creature', 'ghost', 'sword']) {
-    const element = document.querySelector(`#${spriteName}`);
+  const draggableSprites = [
+    ...['creature', 'ghost', 'sword'].map(spriteName => [spriteName, document.querySelector(`#${spriteName}`)]),
+    ...stageTwoIdleFrames.map(element => ['creature', element]),
+  ];
+  for (const [spriteName, element] of draggableSprites) {
     element.addEventListener('pointerdown', event => {
       if (layoutMode !== 'sprites') return;
       event.preventDefault();
