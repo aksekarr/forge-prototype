@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stage 2 idle frame check</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+    body { margin: 0; padding: 24px; background: #777; }
+    h1, h2 { margin: 0 0 12px; }
+    h2 { font-size: 1rem; }
+    main { display: grid; gap: 20px; }
+    section { padding: 18px; border: 1px solid #999; }
+    .dark { color: #eee; background: #17212b; }
+    .light { color: #222; background: #f5efe4; }
+    .frames { display: flex; align-items: flex-end; gap: 12px; overflow-x: auto; }
+    img { display: block; width: 124px; height: auto; image-rendering: crisp-edges; image-rendering: pixelated; }
+    .checks { display: flex; flex-wrap: wrap; gap: 36px; align-items: flex-end; }
+    figure { margin: 0; }
+    figcaption { margin-bottom: 8px; font-weight: 600; }
+    .overlay { position: relative; width: 124px; aspect-ratio: 418 / 444; }
+    .overlay img { position: absolute; inset: 0; opacity: .5; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Stage 2 idle frame check</h1>
+    <section class="dark">
+      <h2>Four frames — dark background</h2>
+      <div class="frames" data-frames></div>
+    </section>
+    <section class="light">
+      <h2>Four frames — light background</h2>
+      <div class="frames" data-frames></div>
+    </section>
+    <section class="dark checks">
+      <figure>
+        <figcaption>Looping preview</figcaption>
+        <img id="preview" src="../assets/stage-2-idle-1.png" alt="Animated stage 2 creature">
+      </figure>
+      <figure>
+        <figcaption>Frames 1 + 2 at 50% each</figcaption>
+        <div class="overlay">
+          <img src="../assets/stage-2-idle-1.png" alt="Frame 1">
+          <img src="../assets/stage-2-idle-2.png" alt="Frame 2">
+        </div>
+      </figure>
+    </section>
+  </main>
+  <script>
+    const path = frame => `../assets/stage-2-idle-${frame}.png`;
+    document.querySelectorAll('[data-frames]').forEach(row => {
+      for (let frame = 1; frame <= 4; frame += 1) {
+        const image = new Image();
+        image.src = path(frame);
+        image.alt = `Frame ${frame}`;
+        row.append(image);
+      }
+    });
+
+    const sequence = [[1, 500], [2, 450], [1, 350], [4, 450], [1, 500],
+      [2, 450], [3, 140], [1, 350], [4, 450]];
+    const preview = document.querySelector('#preview');
+    let step = 0;
+    function playNext() {
+      const [frame, duration] = sequence[step];
+      preview.src = path(frame);
+      step = (step + 1) % sequence.length;
+      window.setTimeout(playNext, duration);
+    }
+    playNext();
+  </script>
+</body>
+</html>
