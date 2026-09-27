@@ -1270,12 +1270,19 @@ function setupDemoMode() {
     save();
     render();
   });
-  document.querySelector('#start-demo-egg').addEventListener('click', () => {
+  document.querySelector('#start-demo-egg').addEventListener('click', async () => {
     localStorage.removeItem(ACTIVE_STORAGE_KEY);
     state = eggDemoState();
     today = state.simulatedDate;
     save();
     render();
+    const creature = document.querySelector('#creature');
+    await waitForImageDecode(creature);
+    if (creature.classList.contains('egg-idle')) {
+      creature.classList.remove('egg-idle');
+      void creature.offsetWidth;
+      creature.classList.add('egg-idle');
+    }
   });
   setupOathReveal(document.querySelector('#read-demo-oath'), demoOath);
 }
