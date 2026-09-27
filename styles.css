@@ -120,6 +120,9 @@ h2 { margin: 0 0 15px; font-size: 17px; font-weight: 400; letter-spacing: .04em;
 }
 .tick[aria-pressed="true"] { background: #405f52; border-color: #405f52; color: #fffdf6; font-family: system-ui, sans-serif; font-size: 17px; }
 .tick:disabled { cursor: default; opacity: .72; }
+.task.locked { color: #766b60; }
+.task.locked .tick { border-style: dashed; background: rgba(108, 91, 71, .12); opacity: .48; }
+.profile-message { margin: 2px 0; color: #5f321b; font-size: 18px; line-height: 1.3; }
 .record { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; }
 .record-cell { min-height: 68px; padding: 8px 3px; display: grid; align-content: space-between; background: #eae1d5; text-align: center; }
 .record-cell.current { background: #d8e1d5; }
@@ -237,6 +240,13 @@ h2 { color: #71320f; font-size: 19px; text-transform: uppercase; }
 @keyframes demo-oath-fade { from { opacity: 0; } to { opacity: 1; } }
 .demo-link { display: block; width: fit-content; margin: 34px auto 0; color: #71320f; font-family: "Pixelify Sans", system-ui, sans-serif; font-size: 15px; }
 .demo-mode .demo-link { display: none; }
+.profile-welcome { width: min(540px, calc(100% - 32px)); max-width: none; padding: 0; border: 0; background: transparent; overflow: visible; }
+.profile-welcome::backdrop { background: rgba(20, 10, 7, .78); }
+.profile-welcome-card { padding: clamp(25px, 5vw, 38px); }
+.profile-welcome-card h2 { margin-bottom: 22px; font-size: clamp(22px, 4vw, 28px); text-transform: none; }
+.profile-welcome-card p { margin: 0; color: #392016; font: clamp(18px, 3.2vw, 21px)/1.3 "IM Fell English", Georgia, serif; }
+.profile-welcome-card p + p { margin-top: 18px; }
+.profile-welcome-card button { display: block; margin: 28px auto 0; border: 2px solid #603014; background: #c96b28; color: #fff4cf; box-shadow: 2px 2px 0 #3a1d0d; cursor: pointer; font-family: "Pixelify Sans", system-ui, sans-serif; padding: 9px 18px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 @media (max-width: 899px) {

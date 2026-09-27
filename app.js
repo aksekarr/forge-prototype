@@ -94,7 +94,9 @@ const EGG_WIDTH_PERCENT = ((STAGE_ONE.width / 1024) * CREATURE_SCALE * (442 / 45
 const params = new URLSearchParams(window.location.search);
 const isLayoutMode = params.get('layout') === '1';
 const isDemoMode = params.get('demo') === '1';
-const ACTIVE_STORAGE_KEY = isDemoMode ? `${STORAGE_KEY}-demo` : STORAGE_KEY;
+const profileId = /^[A-Za-z0-9-]{1,20}$/.test(params.get('p') || '') ? params.get('p') : null;
+const isProfileMode = Boolean(profileId) && !isDemoMode && !isLayoutMode;
+const ACTIVE_STORAGE_KEY = isDemoMode ? `${STORAGE_KEY}-demo` : isProfileMode ? `${STORAGE_KEY}-p-${profileId}` : STORAGE_KEY;
 if (!isLayoutMode) document.querySelector('#layout-tools').remove();
 if (!isDemoMode) {
   document.querySelector('#demo-panel').remove();
@@ -105,7 +107,10 @@ if (!isDemoMode) {
 }
 if (params.get('reset') === '1' && !isLayoutMode) {
   localStorage.removeItem(ACTIVE_STORAGE_KEY);
-  window.location.replace(`${window.location.pathname}${params.has('today') ? `?today=${params.get('today')}` : ''}`);
+  const resetParams = isProfileMode ? new URLSearchParams(params) : new URLSearchParams();
+  resetParams.delete('reset');
+  if (!isProfileMode && params.has('today')) resetParams.set('today', params.get('today'));
+  window.location.replace(`${window.location.pathname}${resetParams.size ? `?${resetParams}` : ''}`);
 }
 
 function localDateString(date = new Date()) {
@@ -115,6 +120,22 @@ function localDateString(date = new Date()) {
 
 const override = /^\d{4}-\d{2}-\d{2}$/.test(params.get('today') || '') ? params.get('today') : null;
 const realToday = override || localDateString();
+let profileIncomplete = false;
+
+function validStartDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? value : null;
+}
+
+function profileSetup() {
+  const tasks = (params.get('tasks') || '').split('|').map(task => task.trim());
+  const name = (params.get('n') || '').trim();
+  if (![3, 4].includes(tasks.length) || tasks.some(task => task.length < 1 || task.length > 40) || name.length < 1 || name.length > 30) return null;
+  const requestedStart = validStartDate(params.get('start'));
+  return { firstDay: requestedStart && requestedStart >= realToday ? requestedStart : realToday, days: {}, tasks, name };
+}
 
 function loadState() {
   const stored = localStorage.getItem(ACTIVE_STORAGE_KEY);
@@ -125,6 +146,15 @@ function loadState() {
       && parsed.demoTaskStructure.length === DEMO_TASKS.length
       && parsed.demoTaskStructure.every((task, index) => task === DEMO_TASKS[index]);
     if (!isDemoMode || hasCurrentDemoTasks) return parsed;
+  }
+  if (isProfileMode) {
+    const setup = profileSetup();
+    if (!setup) {
+      profileIncomplete = true;
+      return { firstDay: realToday, days: {}, tasks: [], name: '' };
+    }
+    localStorage.setItem(ACTIVE_STORAGE_KEY, JSON.stringify(setup));
+    return setup;
   }
   const firstDay = isDemoMode ? localDateString() : realToday;
   const state = { firstDay, days: {}, ...(isDemoMode ? { simulatedDate: firstDay, demoStateVersion: DEMO_STATE_VERSION, demoTaskStructure: [...DEMO_TASKS] } : {}) };
@@ -211,15 +241,15 @@ function visibleCreature() {
   return allIdleFrames().find(frame => !frame.hidden) || document.querySelector('#creature');
 }
 
-function save() { if (!isLayoutMode) localStorage.setItem(ACTIVE_STORAGE_KEY, JSON.stringify(state)); }
+function save() { if (!isLayoutMode && !profileIncomplete) localStorage.setItem(ACTIVE_STORAGE_KEY, JSON.stringify(state)); }
 function dayOffset(date) {
   const [y, m, d] = date.split('-').map(Number);
   const [fy, fm, fd] = state.firstDay.split('-').map(Number);
   return Math.round((new Date(y, m - 1, d) - new Date(fy, fm - 1, fd)) / 86400000);
 }
 function todayTasks() { return state.days[today]?.tasks || {}; }
-function currentTasks() { return isDemoMode ? DEMO_TASKS : TASKS; }
-function currentSwordReveals() { return isDemoMode ? DEMO_SWORD_REVEALS : SWORD_REVEALS; }
+function currentTasks() { return isDemoMode ? DEMO_TASKS : isProfileMode ? state.tasks : TASKS; }
+function currentSwordReveals() { return isDemoMode || (isProfileMode && currentTasks().length === 3) ? DEMO_SWORD_REVEALS : SWORD_REVEALS; }
 function completedCount(tasks) { return currentTasks().filter(task => tasks[task]).length; }
 function isComplete(tasks) { return completedCount(tasks) === currentTasks().length; }
 function completedDays() { return Object.values(state.days).filter(day => isComplete(day.tasks || {})).length; }
@@ -269,7 +299,8 @@ function recalculateScenePositions() {
   applyPositions(currentSceneConfig());
 }
 
-function currentSceneConfig() { return SCENES[Math.max(0, dayOffset(today)) % SCENES.length]; }
+function isBeforeFirstDay() { return isProfileMode && today < state.firstDay; }
+function currentSceneConfig() { return SCENES[isBeforeFirstDay() ? 0 : Math.max(0, dayOffset(today)) % SCENES.length]; }
 function wait(milliseconds) { return new Promise(resolve => window.setTimeout(resolve, reduceMotion ? Math.min(180, milliseconds) : milliseconds)); }
 async function waitForVisualCompletion(elements) {
   const animations = elements.flatMap(element => element.getAnimations().filter(animation => animation.playState !== 'finished'));
@@ -612,8 +643,9 @@ function renderAmbientMarkers() {
 }
 
 function render() {
+  const beforeFirstDay = isBeforeFirstDay();
   const offset = Math.max(0, dayOffset(today));
-  const sceneConfig = SCENES[offset % SCENES.length];
+  const sceneConfig = SCENES[beforeFirstDay ? 0 : offset % SCENES.length];
   if (isLayoutMode && layoutSceneName !== sceneConfig.name) {
     layoutSceneName = sceneConfig.name;
     layoutPoints = copyPoints({ creature: sceneConfig.creature, ghost: sceneConfig.ghost, sword: sceneConfig.sword });
@@ -622,7 +654,7 @@ function render() {
   }
   const tasks = todayTasks();
   const isTodayComplete = isComplete(tasks);
-  const displayStage = activeSequence ? activeSequence.beforeStage : isLayoutMode ? (layoutPreview ?? stage()) : stage();
+  const displayStage = beforeFirstDay ? 0 : activeSequence ? activeSequence.beforeStage : isLayoutMode ? (layoutPreview ?? stage()) : stage();
   const creatureConfig = CREATURES[displayStage];
   const scene = document.querySelector('#scene');
   const sceneImage = document.querySelector('#scene-image');
@@ -645,7 +677,7 @@ function render() {
   const revealed = isLayoutMode ? 100 : activeSequence?.revealOverride ?? currentSwordReveals()[completedCount(tasks)];
   sword.style.setProperty('--sword-clip', `${100 - revealed}%`);
   sword.classList.toggle('partial', !activeSequence && !isLayoutMode && revealed > 0 && revealed < 100);
-  ghost.hidden = (!isLayoutMode && isTodayComplete && !activeSequence) || Boolean(activeSequence?.ghostGone) || (isLayoutMode && layoutGhostCooldown);
+  ghost.hidden = (!beforeFirstDay && !isLayoutMode && isTodayComplete && !activeSequence) || Boolean(activeSequence?.ghostGone) || (isLayoutMode && layoutGhostCooldown);
   sword.hidden = Boolean(activeSequence?.swordGone);
   const showEvolution = activeSequence?.kind === 'evolving';
   evolutionForm.hidden = !showEvolution;
@@ -661,11 +693,33 @@ function render() {
   }
 
   document.querySelector('#day-number').textContent = offset + 1;
-  document.querySelector('#date-label').textContent = formatDate(today);
-  document.querySelector('#task-list').innerHTML = currentTasks().map(task => {
+  document.querySelector('#date-label').textContent = beforeFirstDay
+    ? (dayOffset(today) === -1 ? 'Your seven days begin tomorrow.' : `Your seven days begin on ${formatDate(state.firstDay)}.`)
+    : formatDate(today);
+  if (isProfileMode) document.querySelector('#tasks-title').firstChild.nodeValue = state.name ? `${state.name} · Today ` : 'Today ';
+  const taskList = document.querySelector('#task-list');
+  taskList.replaceChildren();
+  if (profileIncomplete) {
+    const message = document.createElement('p');
+    message.className = 'profile-message';
+    message.textContent = 'This link is incomplete. Ask whoever sent it for a new one.';
+    taskList.append(message);
+  } else currentTasks().forEach(task => {
     const checked = Boolean(tasks[task]);
-    return `<div class="task"><span>${task}</span><button class="tick" data-task="${task}" aria-pressed="${checked}" aria-label="${checked ? `Undo ${task}` : `Complete ${task}` }" ${activeSequence || isLayoutMode ? 'disabled' : ''}>✓</button></div>`;
-  }).join('');
+    const row = document.createElement('div');
+    row.className = `task${beforeFirstDay ? ' locked' : ''}`;
+    const label = document.createElement('span');
+    label.textContent = task;
+    const button = document.createElement('button');
+    button.className = 'tick';
+    button.dataset.task = task;
+    button.setAttribute('aria-pressed', String(checked));
+    button.setAttribute('aria-label', checked ? `Undo ${task}` : `Complete ${task}`);
+    button.disabled = Boolean(activeSequence || isLayoutMode || beforeFirstDay);
+    button.textContent = '✓';
+    row.append(label, button);
+    taskList.append(row);
+  });
   document.querySelector('#record').innerHTML = Array.from({ length: 7 }, (_, index) => {
     const date = recordDate(index);
     const count = completedCount(state.days[date]?.tasks || {});
@@ -677,7 +731,7 @@ function render() {
 
 document.querySelector('#task-list').addEventListener('click', event => {
   const button = event.target.closest('.tick');
-  if (!button || activeSequence || isLayoutMode) return;
+  if (!button || activeSequence || isLayoutMode || profileIncomplete || isBeforeFirstDay()) return;
   const task = button.dataset.task;
   const tasks = todayTasks();
   const countBefore = completedCount(tasks);
@@ -1030,6 +1084,41 @@ function setupNormalOath() {
   setupOathReveal(document.querySelector('#read-oath'), document.querySelector('#shared-oath'));
 }
 
+function setupProfileWelcome() {
+  if (!isProfileMode || profileIncomplete || state.welcomeSeen) return;
+  const welcome = document.querySelector('#profile-welcome');
+  const closeButton = document.querySelector('#profile-welcome-close');
+  const beforeFirstDay = isBeforeFirstDay();
+  document.querySelector('#profile-welcome-name').textContent = state.name;
+  document.querySelector('#profile-welcome-start').textContent = beforeFirstDay
+    ? dayOffset(today) === -1
+      ? 'Nothing is asked of you tonight. Your seven days begin tomorrow.'
+      : `Nothing is asked of you tonight. Your seven days begin on ${new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(new Date(`${state.firstDay}T00:00:00`))}.`
+    : 'Your seven days begin today.';
+  document.querySelector('#profile-welcome-deeds').textContent = `Each day holds ${currentTasks().length === 3 ? 'three' : 'four'} deeds. Not great ones: small ones, done with care. What waits in this wood grows only by what you do beyond it.`;
+  closeButton.textContent = beforeFirstDay ? 'Until tomorrow' : 'Begin';
+  const keepWelcomeFocus = event => {
+    if (welcome.open && !welcome.contains(event.target)) closeButton.focus();
+  };
+  welcome.addEventListener('cancel', event => event.preventDefault());
+  welcome.addEventListener('keydown', event => {
+    if (event.key === 'Escape') event.preventDefault();
+    if (event.key === 'Tab') {
+      event.preventDefault();
+      closeButton.focus();
+    }
+  });
+  document.addEventListener('focusin', keepWelcomeFocus);
+  closeButton.addEventListener('click', () => {
+    state.welcomeSeen = true;
+    save();
+    document.removeEventListener('focusin', keepWelcomeFocus);
+    welcome.close();
+  }, { once: true });
+  welcome.showModal();
+  closeButton.focus();
+}
+
 function setupDemoMode() {
   if (!isDemoMode) return;
   document.body.classList.add('demo-mode');
@@ -1073,6 +1162,7 @@ async function startApp() {
   setupNormalOath();
   setupDemoMode();
   render();
+  setupProfileWelcome();
   new ResizeObserver(() => recalculateSceneLayout()).observe(document.querySelector('#scene'));
   placeInitialScene();
   startAmbient();
