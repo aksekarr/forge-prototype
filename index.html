@@ -42,8 +42,8 @@
     </section>
     <section id="demo-panel" class="panel demo-panel" hidden aria-labelledby="demo-title">
       <h2 id="demo-title">Try it</h2>
-      <p>This is a demo. Tick all three tasks to forge the sword, defeat the ghost and grow your creature. Then press Next day to move time forward and watch it evolve. Skip a day to see what happens when you don't.</p>
-      <div class="demo-actions"><button id="next-demo-day" type="button">Next day</button><button id="reset-demo" type="button">Reset demo</button><button id="read-demo-oath" class="secondary-action" type="button">Read the Oath</button></div>
+      <p>This demo starts part-way through a week. Tick the last deed to forge the sword, defeat the ghost and watch your creature evolve. Then press Next day and keep going. Keep all seven days and something is waiting at the end.</p>
+      <div class="demo-actions"><button id="next-demo-day" type="button">Next day</button><button id="reset-demo" type="button">Reset demo</button><button id="start-demo-egg" class="secondary-action" type="button">Start from the egg</button><button id="read-demo-oath" class="secondary-action" type="button">Read the Oath</button></div>
     </section>
     <section class="side-column" aria-label="Daily tasks and seven-day record">
       <section class="panel tasks-panel" aria-labelledby="tasks-title">
@@ -108,6 +108,15 @@
       <p id="profile-welcome-deeds"></p>
       <p>Don't carry the whole week. Carry only the next step, and give it your care. That is enough. It always was.</p>
       <button id="profile-welcome-close" type="button"></button>
+    </section>
+  </dialog>
+  <dialog id="demo-welcome" class="profile-welcome" aria-labelledby="demo-welcome-title">
+    <section class="panel profile-welcome-card">
+      <h2 id="demo-welcome-title">Welcome, stranger,</h2>
+      <p>This is Mirrorwood. It asks nothing of your time. Each day, a few deeds are done out there, in real life, and this world only reflects them: the sword forges, the ghost falls, the creature grows.</p>
+      <p>This creature is four days into its week. One deed remains today.</p>
+      <p>Nothing here will lecture you. It only witnesses.</p>
+      <button id="demo-welcome-close" type="button">Enter</button>
     </section>
   </dialog>
   <dialog id="closing-message" class="profile-welcome" aria-labelledby="closing-message-title">

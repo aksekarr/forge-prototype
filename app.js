@@ -46,7 +46,7 @@ const STORAGE_KEY = 'seven-days-prototype';
 const CREATURE_SCALE = 0.46;
 const SWORD_REVEALS = [0, 22, 40, 70, 100];
 const DEMO_SWORD_REVEALS = [0, 40, 70, 100];
-const DEMO_STATE_VERSION = 1;
+const DEMO_STATE_VERSION = 2;
 const STAGE_ONE_IDLE_SEQUENCE = Object.freeze([
   [1, 500], [2, 450], [1, 350], [4, 450], [1, 500],
   [2, 450], [3, 140], [1, 350], [4, 450],
@@ -137,6 +137,30 @@ function profileSetup() {
   return { firstDay: requestedStart && requestedStart >= realToday ? requestedStart : realToday, days: {}, tasks, name };
 }
 
+function demoTasks(count) {
+  const completedAt = new Date().toISOString();
+  return Object.fromEntries(DEMO_TASKS.slice(0, count).map(task => [task, completedAt]));
+}
+
+function demoStateBase(firstDay, simulatedDate) {
+  return { firstDay, simulatedDate, days: {}, demoStateVersion: DEMO_STATE_VERSION, demoTaskStructure: [...DEMO_TASKS] };
+}
+
+function seededDemoState(demoWelcomeSeen = false) {
+  const simulatedDate = localDateString();
+  const firstDay = addLocalDays(simulatedDate, -4);
+  const demoState = demoStateBase(firstDay, simulatedDate);
+  for (let index = 0; index < 4; index += 1) demoState.days[addLocalDays(firstDay, index)] = { tasks: demoTasks(DEMO_TASKS.length) };
+  demoState.days[simulatedDate] = { tasks: demoTasks(2) };
+  if (demoWelcomeSeen) demoState.demoWelcomeSeen = true;
+  return demoState;
+}
+
+function eggDemoState() {
+  const firstDay = localDateString();
+  return { ...demoStateBase(firstDay, firstDay), demoWelcomeSeen: true };
+}
+
 function loadState() {
   const stored = localStorage.getItem(ACTIVE_STORAGE_KEY);
   if (stored) {
@@ -156,8 +180,13 @@ function loadState() {
     localStorage.setItem(ACTIVE_STORAGE_KEY, JSON.stringify(setup));
     return setup;
   }
-  const firstDay = isDemoMode ? localDateString() : realToday;
-  const state = { firstDay, days: {}, ...(isDemoMode ? { simulatedDate: firstDay, demoStateVersion: DEMO_STATE_VERSION, demoTaskStructure: [...DEMO_TASKS] } : {}) };
+  if (isDemoMode) {
+    const state = seededDemoState();
+    localStorage.setItem(ACTIVE_STORAGE_KEY, JSON.stringify(state));
+    return state;
+  }
+  const firstDay = realToday;
+  const state = { firstDay, days: {} };
   if (!isLayoutMode) localStorage.setItem(ACTIVE_STORAGE_KEY, JSON.stringify(state));
   return state;
 }
@@ -1174,17 +1203,17 @@ function setupProfileWelcome() {
 }
 
 function sevenDayRunComplete() {
-  if (isDemoMode || profileIncomplete) return false;
+  if (profileIncomplete) return false;
   return Array.from({ length: 7 }, (_, index) => recordDate(index))
     .every(date => isComplete(state.days[date]?.tasks || {}));
 }
 
 function openClosingMessage(preview = false) {
-  if (isDemoMode || (!preview && (state.closingSeen || !sevenDayRunComplete()))) return;
+  if (!preview && (state.closingSeen || !sevenDayRunComplete())) return;
   const dialog = document.querySelector('#closing-message');
   const closeButton = document.querySelector('#closing-message-close');
-  document.querySelector('#closing-message-title').textContent = isProfileMode ? `${state.name},` : 'Seven days.';
-  document.querySelector('#closing-message-opening').textContent = isProfileMode
+  document.querySelector('#closing-message-title').textContent = isDemoMode ? 'Stranger,' : isProfileMode ? `${state.name},` : 'Seven days.';
+  document.querySelector('#closing-message-opening').textContent = isProfileMode || isDemoMode
     ? 'Seven days. Every one of them kept.'
     : 'Every one of them kept.';
   openParchmentDialog(dialog, closeButton, () => {
@@ -1200,10 +1229,20 @@ function maybeShowClosingAfterCompletion() {
 }
 
 function setupClosingMessage() {
-  if (isDemoMode || isLayoutMode || state.closingSeen || !sevenDayRunComplete()) return;
-  const welcome = document.querySelector('#profile-welcome');
+  if (isLayoutMode || state.closingSeen || !sevenDayRunComplete()) return;
+  const welcome = document.querySelector(isDemoMode ? '#demo-welcome' : '#profile-welcome');
   if (welcome.open) welcome.addEventListener('close', () => openClosingMessage(), { once: true });
   else openClosingMessage();
+}
+
+function setupDemoWelcome() {
+  if (!isDemoMode || state.demoWelcomeSeen) return;
+  const welcome = document.querySelector('#demo-welcome');
+  const closeButton = document.querySelector('#demo-welcome-close');
+  openParchmentDialog(welcome, closeButton, () => {
+    state.demoWelcomeSeen = true;
+    save();
+  });
 }
 
 function setupDemoMode() {
@@ -1226,9 +1265,15 @@ function setupDemoMode() {
   });
   document.querySelector('#reset-demo').addEventListener('click', () => {
     localStorage.removeItem(ACTIVE_STORAGE_KEY);
-    const firstDay = localDateString();
-    state = { firstDay, simulatedDate: firstDay, days: {}, demoStateVersion: DEMO_STATE_VERSION, demoTaskStructure: [...DEMO_TASKS] };
-    today = firstDay;
+    state = seededDemoState(true);
+    today = state.simulatedDate;
+    save();
+    render();
+  });
+  document.querySelector('#start-demo-egg').addEventListener('click', () => {
+    localStorage.removeItem(ACTIVE_STORAGE_KEY);
+    state = eggDemoState();
+    today = state.simulatedDate;
     save();
     render();
   });
@@ -1250,6 +1295,7 @@ async function startApp() {
   setupDemoMode();
   render();
   setupProfileWelcome();
+  setupDemoWelcome();
   setupClosingMessage();
   new ResizeObserver(() => recalculateSceneLayout()).observe(document.querySelector('#scene'));
   placeInitialScene();
