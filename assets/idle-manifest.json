@@ -1,0 +1,60 @@
+{
+  "stages": {
+    "1": {
+      "frame_count": 4,
+      "canvas_width": 455,
+      "canvas_height": 454,
+      "feet_anchor_x": 226,
+      "feet_anchor_y": 449,
+      "frame_1_opaque_bbox_height": 412
+    },
+    "2": {
+      "frame_count": 4,
+      "canvas_width": 418,
+      "canvas_height": 444,
+      "feet_anchor_x": 207,
+      "feet_anchor_y": 439,
+      "frame_1_opaque_bbox_height": 433
+    },
+    "3": {
+      "frame_count": 4,
+      "canvas_width": 461,
+      "canvas_height": 527,
+      "feet_anchor_x": 260,
+      "feet_anchor_y": 522,
+      "frame_1_opaque_bbox_height": 508
+    },
+    "4": {
+      "frame_count": 4,
+      "canvas_width": 500,
+      "canvas_height": 550,
+      "feet_anchor_x": 169,
+      "feet_anchor_y": 545,
+      "frame_1_opaque_bbox_height": 541
+    },
+    "5": {
+      "frame_count": 5,
+      "canvas_width": 356,
+      "canvas_height": 404,
+      "feet_anchor_x": 187,
+      "feet_anchor_y": 399,
+      "frame_1_opaque_bbox_height": 390
+    },
+    "6": {
+      "frame_count": 5,
+      "canvas_width": 376,
+      "canvas_height": 318,
+      "feet_anchor_x": 195,
+      "feet_anchor_y": 313,
+      "frame_1_opaque_bbox_height": 299
+    },
+    "7": {
+      "frame_count": 5,
+      "canvas_width": 403,
+      "canvas_height": 376,
+      "feet_anchor_x": 162,
+      "feet_anchor_y": 371,
+      "frame_1_opaque_bbox_height": 364
+    }
+  }
+}

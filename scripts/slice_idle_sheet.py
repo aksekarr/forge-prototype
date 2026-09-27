@@ -1,5 +1,6 @@
-"""Slice and foot-align the four frames in the stage 2 idle sprite sheet."""
+"""Slice and foot-align every stage's idle animation sprite sheet."""
 
+import json
 from math import ceil, floor
 from pathlib import Path
 
@@ -7,8 +8,10 @@ from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parent.parent
-SOURCE = ROOT / "assets" / "originals" / "stage-2-idle-sheet.png"
-OUTPUT_PATTERN = ROOT / "assets" / "stage-2-idle-{}.png"
+SOURCE_PATTERN = ROOT / "assets" / "originals" / "stage-{}-idle-sheet.png"
+OUTPUT_PATTERN = ROOT / "assets" / "stage-{}-idle-{}.png"
+MANIFEST = ROOT / "assets" / "idle-manifest.json"
+STAGES = range(1, 8)
 ALPHA_THRESHOLD = 40
 ALPHA_CLEAN_THRESHOLD = 128
 PADDING = 4
@@ -24,8 +27,9 @@ def contiguous_runs(values):
     return [tuple(run) for run in runs]
 
 
-def main():
-    sheet = Image.open(SOURCE).convert("RGBA")
+def analyse_stage(stage):
+    source = Path(str(SOURCE_PATTERN).format(stage))
+    sheet = Image.open(source).convert("RGBA")
     alpha = sheet.getchannel("A")
     occupied_columns = [
         x
@@ -33,8 +37,10 @@ def main():
         if alpha.crop((x, 0, x + 1, sheet.height)).getextrema()[1] > ALPHA_THRESHOLD
     ]
     frame_runs = contiguous_runs(occupied_columns)
-    if len(frame_runs) != 4:
-        raise ValueError(f"Expected four opaque column runs, found {len(frame_runs)}")
+    if len(frame_runs) not in (4, 5):
+        raise ValueError(
+            f"stage {stage}: expected 4 or 5 opaque column runs, found {len(frame_runs)}"
+        )
 
     frames = []
     for left, right in frame_runs:
@@ -62,9 +68,28 @@ def main():
         PADDING + left_reach + 1 + right_reach + PADDING,
         PADDING + height_above_feet + 1 + PADDING,
     )
+    return {
+        "stage": stage,
+        "sheet": sheet,
+        "runs": frame_runs,
+        "frames": frames,
+        "anchor": (anchor_x, anchor_y),
+        "canvas_size": canvas_size,
+    }
 
-    print(f"canvas={canvas_size[0]}x{canvas_size[1]}")
-    for index, frame in enumerate(frames, start=1):
+
+def write_stage(analysis):
+    stage = analysis["stage"]
+    sheet = analysis["sheet"]
+    anchor_x, anchor_y = analysis["anchor"]
+    canvas_size = analysis["canvas_size"]
+    frame_one_height = None
+
+    print(
+        f"stage {stage}: frames={len(analysis['frames'])} "
+        f"canvas={canvas_size[0]}x{canvas_size[1]} anchor=({anchor_x},{anchor_y})"
+    )
+    for index, frame in enumerate(analysis["frames"], start=1):
         left, top, right, bottom = frame["bbox"]
         sprite = sheet.crop((left, top, right + 1, bottom + 1))
         paste_x = anchor_x - (frame["feet_center"] - left)
@@ -75,14 +100,42 @@ def main():
             lambda value: 255 if value >= ALPHA_CLEAN_THRESHOLD else 0
         )
         canvas.putalpha(clean_alpha)
-        output = Path(str(OUTPUT_PATTERN).format(index))
+        output = Path(str(OUTPUT_PATTERN).format(stage, index))
         canvas.save(output)
-        semitransparent = sum(1 for value in canvas.getchannel("A").getdata() if 1 <= value <= 254)
+        if index == 1:
+            cleaned_bbox = clean_alpha.getbbox()
+            frame_one_height = cleaned_bbox[3] - cleaned_bbox[1]
         print(
-            f"frame {index}: columns={frame_runs[index - 1]} bbox={frame['bbox']} "
-            f"lowest={frame['lowest']} feet_center={frame['feet_center']} "
-            f"shift=({paste_x},{paste_y}) semitransparent={semitransparent}"
+            f"  frame {index}: columns={analysis['runs'][index - 1]} "
+            f"bbox={frame['bbox']} shift=({paste_x},{paste_y})"
         )
+
+    return {
+        "frame_count": len(analysis["frames"]),
+        "canvas_width": canvas_size[0],
+        "canvas_height": canvas_size[1],
+        "feet_anchor_x": anchor_x,
+        "feet_anchor_y": anchor_y,
+        "frame_1_opaque_bbox_height": frame_one_height,
+    }
+
+
+def main():
+    analyses = []
+    errors = []
+    for stage in STAGES:
+        try:
+            analyses.append(analyse_stage(stage))
+        except (FileNotFoundError, ValueError) as error:
+            errors.append(str(error))
+    if errors:
+        raise SystemExit("Could not split cleanly:\n" + "\n".join(errors))
+
+    manifest = {"stages": {}}
+    for analysis in analyses:
+        manifest["stages"][str(analysis["stage"])] = write_stage(analysis)
+    MANIFEST.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    print(f"manifest={MANIFEST.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

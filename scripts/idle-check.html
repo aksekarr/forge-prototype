@@ -3,72 +3,53 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Stage 2 idle frame check</title>
+  <title>Idle animation checks</title>
   <style>
-    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
-    body { margin: 0; padding: 24px; background: #777; }
-    h1, h2 { margin: 0 0 12px; }
-    h2 { font-size: 1rem; }
-    main { display: grid; gap: 20px; }
-    section { padding: 18px; border: 1px solid #999; }
-    .dark { color: #eee; background: #17212b; }
-    .light { color: #222; background: #f5efe4; }
-    .frames { display: flex; align-items: flex-end; gap: 12px; overflow-x: auto; }
-    img { display: block; width: 124px; height: auto; image-rendering: crisp-edges; image-rendering: pixelated; }
-    .checks { display: flex; flex-wrap: wrap; gap: 36px; align-items: flex-end; }
-    figure { margin: 0; }
-    figcaption { margin-bottom: 8px; font-weight: 600; }
-    .overlay { position: relative; width: 124px; aspect-ratio: 418 / 444; }
-    .overlay img { position: absolute; inset: 0; opacity: .5; }
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 24px; color: #f4f1df; background: #203326; }
+    h1 { margin: 0 0 20px; font-size: 1.5rem; }
+    main { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; }
+    figure { display: grid; place-items: center; min-width: 150px; min-height: 260px; margin: 0; padding: 14px; border: 1px solid #90ae7d; background: #567d46; }
+    figcaption { align-self: start; font-weight: 700; }
+    img { display: block; width: auto; max-width: 190px; height: 210px; object-fit: contain; image-rendering: crisp-edges; image-rendering: pixelated; }
   </style>
 </head>
 <body>
-  <main>
-    <h1>Stage 2 idle frame check</h1>
-    <section class="dark">
-      <h2>Four frames — dark background</h2>
-      <div class="frames" data-frames></div>
-    </section>
-    <section class="light">
-      <h2>Four frames — light background</h2>
-      <div class="frames" data-frames></div>
-    </section>
-    <section class="dark checks">
-      <figure>
-        <figcaption>Looping preview</figcaption>
-        <img id="preview" src="../assets/stage-2-idle-1.png" alt="Animated stage 2 creature">
-      </figure>
-      <figure>
-        <figcaption>Frames 1 + 2 at 50% each</figcaption>
-        <div class="overlay">
-          <img src="../assets/stage-2-idle-1.png" alt="Frame 1">
-          <img src="../assets/stage-2-idle-2.png" alt="Frame 2">
-        </div>
-      </figure>
-    </section>
-  </main>
+  <h1>Idle animation checks</h1>
+  <main id="previews"></main>
   <script>
-    const path = frame => `../assets/stage-2-idle-${frame}.png`;
-    document.querySelectorAll('[data-frames]').forEach(row => {
-      for (let frame = 1; frame <= 4; frame += 1) {
-        const image = new Image();
-        image.src = path(frame);
-        image.alt = `Frame ${frame}`;
-        row.append(image);
-      }
-    });
-
-    const sequence = [[1, 500], [2, 450], [1, 350], [4, 450], [1, 500],
+    const STANDARD = [[1, 500], [2, 450], [1, 350], [4, 450], [1, 500],
       [2, 450], [3, 140], [1, 350], [4, 450]];
-    const preview = document.querySelector('#preview');
-    let step = 0;
-    function playNext() {
-      const [frame, duration] = sequence[step];
-      preview.src = path(frame);
-      step = (step + 1) % sequence.length;
-      window.setTimeout(playNext, duration);
+    const STAGE_FOUR = [[1, 500], [2, 450], [1, 350], [4, 450], [1, 500],
+      [2, 450], [3, 140], [1, 350], [1, 450]];
+    const BREATHING = [[1, 500], [2, 450], [1, 350], [1, 450], [1, 500],
+      [2, 450], [3, 140], [1, 350], [1, 450]];
+    const SPECIAL = [[4, 220], [5, 900], [4, 220], [1, 600]];
+    const path = (stage, frame) => `../assets/stage-${stage}-idle-${frame}.png`;
+
+    for (let stage = 1; stage <= 7; stage += 1) {
+      const figure = document.createElement('figure');
+      const caption = document.createElement('figcaption');
+      const preview = new Image();
+      caption.textContent = `Stage ${stage}`;
+      preview.src = path(stage, 1);
+      preview.alt = `Animated stage ${stage} creature`;
+      figure.append(caption, preview);
+      document.querySelector('#previews').append(figure);
+
+      const sequence = stage <= 3 ? STANDARD
+        : stage === 4 ? STAGE_FOUR
+          : [...BREATHING, ...BREATHING, ...SPECIAL];
+      let step = 0;
+      function playNext() {
+        const [frame, duration] = sequence[step];
+        preview.src = path(stage, frame);
+        step = (step + 1) % sequence.length;
+        window.setTimeout(playNext, duration);
+      }
+      playNext();
     }
-    playNext();
   </script>
 </body>
 </html>
