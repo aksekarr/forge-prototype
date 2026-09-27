@@ -179,6 +179,34 @@ let idleStage = null;
 let idleStep = 0;
 let idleTimer = null;
 let currentIdleSequence = [];
+const tracksRealDate = !isDemoMode && !isLayoutMode && !override;
+let dateRefreshPromise = null;
+
+function waitForSequenceEnd() {
+  return new Promise(resolve => {
+    const check = () => {
+      if (activeSequence) window.setTimeout(check, 50);
+      else resolve();
+    };
+    check();
+  });
+}
+
+async function refreshTodayIfChanged() {
+  if (!tracksRealDate || localDateString() === today) return false;
+  if (dateRefreshPromise) return dateRefreshPromise;
+  dateRefreshPromise = (async () => {
+    if (activeSequence) await waitForSequenceEnd();
+    const currentLocalDate = localDateString();
+    if (currentLocalDate === today) return false;
+    today = currentLocalDate;
+    render();
+    setupProfileWelcome();
+    setupClosingMessage();
+    return true;
+  })().finally(() => { dateRefreshPromise = null; });
+  return dateRefreshPromise;
+}
 
 function allIdleFrames() { return [...idleFramesByStage.values()].flat(); }
 
@@ -522,7 +550,17 @@ function drawAmbient(timestamp) {
 }
 
 function startAmbient() { if (!ambient.frame && !document.hidden) ambient.frame = requestAnimationFrame(drawAmbient); }
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { ambient.last = 0; startAmbient(); } });
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    refreshTodayIfChanged();
+    ambient.last = 0;
+    startAmbient();
+  }
+});
+if (tracksRealDate) {
+  window.addEventListener('focus', () => { refreshTodayIfChanged(); });
+  window.setInterval(() => { if (!document.hidden) refreshTodayIfChanged(); }, 60000);
+}
 
 function resizeAmbientCanvas() {
   const scene = document.querySelector('#scene');
@@ -729,10 +767,12 @@ function render() {
   if (isDemoMode && nextDayButton) nextDayButton.disabled = Boolean(activeSequence);
 }
 
-document.querySelector('#task-list').addEventListener('click', event => {
+document.querySelector('#task-list').addEventListener('click', async event => {
   const button = event.target.closest('.tick');
-  if (!button || activeSequence || isLayoutMode || profileIncomplete || isBeforeFirstDay()) return;
+  if (!button || activeSequence || isLayoutMode || profileIncomplete) return;
   const task = button.dataset.task;
+  if (tracksRealDate) await refreshTodayIfChanged();
+  if (activeSequence || isBeforeFirstDay()) return;
   const tasks = todayTasks();
   const countBefore = completedCount(tasks);
   const wasComplete = isComplete(tasks);
