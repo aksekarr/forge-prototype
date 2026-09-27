@@ -794,6 +794,7 @@ async function runCompletion(countBefore) {
     await wait(ANIMATION_TIMINGS.finalFlash);
     activeSequence = null;
     render();
+    maybeShowClosingAfterCompletion();
     return;
   }
   await runForge(countBefore, currentTasks().length, beforeStage, async () => {
@@ -803,6 +804,7 @@ async function runCompletion(countBefore) {
     else await runEvolution(beforeStage, afterStage);
     activeSequence = null;
     render();
+    maybeShowClosingAfterCompletion();
   });
 }
 
@@ -1027,6 +1029,7 @@ function setupLayoutTools() {
     if (button.dataset.replay === 'hatch') { await runHatch(0, 1); finish(); }
     if (button.dataset.replay === 'evolve' && before < 7) { await runEvolution(before, before + 1); finish(); }
   });
+  document.querySelector('#preview-closing').addEventListener('click', () => openClosingMessage(true));
 }
 
 function createOathScroll(oath) {
@@ -1084,6 +1087,33 @@ function setupNormalOath() {
   setupOathReveal(document.querySelector('#read-oath'), document.querySelector('#shared-oath'));
 }
 
+function openParchmentDialog(dialog, closeButton, onClose) {
+  if (dialog.open) return;
+  const keepFocus = event => {
+    if (dialog.open && !dialog.contains(event.target)) closeButton.focus();
+  };
+  const blockDismissal = event => event.preventDefault();
+  const trapKeys = event => {
+    if (event.key === 'Escape') event.preventDefault();
+    if (event.key === 'Tab') {
+      event.preventDefault();
+      closeButton.focus();
+    }
+  };
+  dialog.addEventListener('cancel', blockDismissal);
+  dialog.addEventListener('keydown', trapKeys);
+  document.addEventListener('focusin', keepFocus);
+  closeButton.addEventListener('click', () => {
+    onClose();
+    document.removeEventListener('focusin', keepFocus);
+    dialog.removeEventListener('cancel', blockDismissal);
+    dialog.removeEventListener('keydown', trapKeys);
+    dialog.close();
+  }, { once: true });
+  dialog.showModal();
+  closeButton.focus();
+}
+
 function setupProfileWelcome() {
   if (!isProfileMode || profileIncomplete || state.welcomeSeen) return;
   const welcome = document.querySelector('#profile-welcome');
@@ -1097,26 +1127,43 @@ function setupProfileWelcome() {
     : 'Your seven days begin today.';
   document.querySelector('#profile-welcome-deeds').textContent = `Each day holds ${currentTasks().length === 3 ? 'three' : 'four'} deeds. Not great ones: small ones, done with care. What waits in this wood grows only by what you do beyond it.`;
   closeButton.textContent = beforeFirstDay ? 'Until tomorrow' : 'Begin';
-  const keepWelcomeFocus = event => {
-    if (welcome.open && !welcome.contains(event.target)) closeButton.focus();
-  };
-  welcome.addEventListener('cancel', event => event.preventDefault());
-  welcome.addEventListener('keydown', event => {
-    if (event.key === 'Escape') event.preventDefault();
-    if (event.key === 'Tab') {
-      event.preventDefault();
-      closeButton.focus();
-    }
-  });
-  document.addEventListener('focusin', keepWelcomeFocus);
-  closeButton.addEventListener('click', () => {
+  openParchmentDialog(welcome, closeButton, () => {
     state.welcomeSeen = true;
     save();
-    document.removeEventListener('focusin', keepWelcomeFocus);
-    welcome.close();
-  }, { once: true });
-  welcome.showModal();
-  closeButton.focus();
+  });
+}
+
+function sevenDayRunComplete() {
+  if (isDemoMode || profileIncomplete) return false;
+  return Array.from({ length: 7 }, (_, index) => recordDate(index))
+    .every(date => isComplete(state.days[date]?.tasks || {}));
+}
+
+function openClosingMessage(preview = false) {
+  if (isDemoMode || (!preview && (state.closingSeen || !sevenDayRunComplete()))) return;
+  const dialog = document.querySelector('#closing-message');
+  const closeButton = document.querySelector('#closing-message-close');
+  document.querySelector('#closing-message-title').textContent = isProfileMode ? `${state.name},` : 'Seven days.';
+  document.querySelector('#closing-message-opening').textContent = isProfileMode
+    ? 'Seven days. Every one of them kept.'
+    : 'Every one of them kept.';
+  openParchmentDialog(dialog, closeButton, () => {
+    if (!preview) {
+      state.closingSeen = true;
+      save();
+    }
+  });
+}
+
+function maybeShowClosingAfterCompletion() {
+  if (!isLayoutMode && today === recordDate(6)) openClosingMessage();
+}
+
+function setupClosingMessage() {
+  if (isDemoMode || isLayoutMode || state.closingSeen || !sevenDayRunComplete()) return;
+  const welcome = document.querySelector('#profile-welcome');
+  if (welcome.open) welcome.addEventListener('close', () => openClosingMessage(), { once: true });
+  else openClosingMessage();
 }
 
 function setupDemoMode() {
@@ -1163,6 +1210,7 @@ async function startApp() {
   setupDemoMode();
   render();
   setupProfileWelcome();
+  setupClosingMessage();
   new ResizeObserver(() => recalculateSceneLayout()).observe(document.querySelector('#scene'));
   placeInitialScene();
   startAmbient();
