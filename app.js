@@ -47,25 +47,45 @@ const CREATURE_SCALE = 0.46;
 const SWORD_REVEALS = [0, 22, 40, 70, 100];
 const DEMO_SWORD_REVEALS = [0, 40, 70, 100];
 const DEMO_STATE_VERSION = 1;
-const STAGE_TWO_IDLE_SEQUENCE = Object.freeze([
+const STAGE_ONE_IDLE_SEQUENCE = Object.freeze([
   [1, 500], [2, 450], [1, 350], [4, 450], [1, 500],
   [2, 450], [3, 140], [1, 350], [4, 450],
 ]);
-const STAGE_TWO_IDLE_FILES = Object.freeze(
-  Array.from({ length: 4 }, (_, index) => `stage-2-idle-${index + 1}.png`),
-);
-const STAGE_TWO_IDLE_CANVAS_WIDTH = 418;
-const STAGE_TWO_ORIGINAL_WIDTH = 509;
-const STAGE_TWO_ORIGINAL_OPAQUE_HEIGHT = 532;
-const STAGE_TWO_IDLE_OPAQUE_HEIGHT = 433;
-const STAGE_TWO_IDLE_WIDTH_SCALE = (STAGE_TWO_ORIGINAL_OPAQUE_HEIGHT / STAGE_TWO_IDLE_OPAQUE_HEIGHT)
-  * (STAGE_TWO_IDLE_CANVAS_WIDTH / STAGE_TWO_ORIGINAL_WIDTH);
+const STAGE_TWO_IDLE_SEQUENCE = STAGE_ONE_IDLE_SEQUENCE;
+const STAGE_THREE_IDLE_SEQUENCE = STAGE_ONE_IDLE_SEQUENCE;
+const STAGE_FOUR_IDLE_SEQUENCE = Object.freeze([
+  [1, 500], [2, 450], [1, 350], [4, 450], [1, 500],
+  [2, 450], [3, 140], [1, 350], [1, 450],
+]);
+const BREATHING_IDLE_SEQUENCE = Object.freeze([
+  [1, 500], [2, 450], [1, 350], [1, 450], [1, 500],
+  [2, 450], [3, 140], [1, 350], [1, 450],
+]);
+const SPECIAL_IDLE_SEQUENCE = Object.freeze([[4, 220], [5, 900], [4, 220], [1, 600]]);
+const STAGE_FIVE_IDLE_SEQUENCE = Object.freeze({ breathing: BREATHING_IDLE_SEQUENCE, special: SPECIAL_IDLE_SEQUENCE });
+const STAGE_SIX_IDLE_SEQUENCE = Object.freeze({ breathing: BREATHING_IDLE_SEQUENCE, special: SPECIAL_IDLE_SEQUENCE });
+const STAGE_SEVEN_IDLE_SEQUENCE = Object.freeze({ breathing: BREATHING_IDLE_SEQUENCE, special: SPECIAL_IDLE_SEQUENCE });
+const IDLE_SEQUENCES = Object.freeze({
+  1: STAGE_ONE_IDLE_SEQUENCE,
+  2: STAGE_TWO_IDLE_SEQUENCE,
+  3: STAGE_THREE_IDLE_SEQUENCE,
+  4: STAGE_FOUR_IDLE_SEQUENCE,
+  5: STAGE_FIVE_IDLE_SEQUENCE,
+  6: STAGE_SIX_IDLE_SEQUENCE,
+  7: STAGE_SEVEN_IDLE_SEQUENCE,
+});
+const STAGE_SIZE_ADJUSTMENTS = Object.freeze({
+  1: 1,
+  2: 1,
+  3: 1,
+  4: 1,
+  5: 1,
+  6: Object.freeze({ relativeToStage: 7, proportion: 0.95 }),
+  7: 1,
+});
 const CREATURES = [
   { file: 'egg.png', width: 829 },
-  ...Array.from({ length: 7 }, (_, index) => ({
-    file: index === 1 ? STAGE_TWO_IDLE_FILES[0] : `stage-${index + 1}.png`,
-    width: [456, STAGE_TWO_ORIGINAL_WIDTH * STAGE_TWO_IDLE_WIDTH_SCALE, 648, 919, 974, 1056, 1193][index],
-  })),
+  ...Array.from({ length: 7 }, (_, index) => ({ file: `stage-${index + 1}-idle-1.png`, width: [456, 509, 648, 919, 974, 1056, 1193][index] })),
 ];
 
 const STAGE_ONE = CREATURES[1];
@@ -123,57 +143,72 @@ let layoutMode = 'sprites';
 let layoutGhostCooldown = false;
 let hasInitialPlacement = false;
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const stageTwoIdleFrames = STAGE_TWO_IDLE_FILES.map((file, index) => {
-  const image = document.createElement('img');
-  image.className = 'sprite creature stage-two stage-two-idle-frame';
-  image.src = `assets/${file}`;
-  image.alt = index === 0 ? 'Creature' : '';
-  image.decoding = 'async';
-  image.loading = 'eager';
-  image.hidden = true;
-  document.querySelector('#evolution-form').before(image);
-  return image;
-});
-let stageTwoIdleStep = 0;
-let stageTwoIdleTimer = null;
+let idleManifest = null;
+const idleFramesByStage = new Map();
+let idleStage = null;
+let idleStep = 0;
+let idleTimer = null;
+let currentIdleSequence = [];
 
-function showStageTwoIdleFrame(frameNumber) {
-  stageTwoIdleFrames.forEach((frame, index) => { frame.hidden = index !== frameNumber - 1; });
+function allIdleFrames() { return [...idleFramesByStage.values()].flat(); }
+
+function createIdleSequence(stageNumber) {
+  const sequence = IDLE_SEQUENCES[stageNumber];
+  if (stageNumber < 5) return sequence;
+  const breathingCycles = 4 + Math.floor(Math.random() * 2);
+  return [
+    ...Array.from({ length: breathingCycles }, () => sequence.breathing).flat(),
+    ...sequence.special,
+  ];
 }
 
-function stopStageTwoIdleLoop() {
-  if (stageTwoIdleTimer !== null) window.clearTimeout(stageTwoIdleTimer);
-  stageTwoIdleTimer = null;
-  stageTwoIdleStep = 0;
+function showIdleFrame(stageNumber, frameNumber) {
+  for (const [stage, frames] of idleFramesByStage) {
+    frames.forEach((frame, index) => { frame.hidden = stage !== stageNumber || index !== frameNumber - 1; });
+  }
 }
 
-function runStageTwoIdleStep() {
-  const [frameNumber, duration] = STAGE_TWO_IDLE_SEQUENCE[stageTwoIdleStep];
-  showStageTwoIdleFrame(frameNumber);
-  stageTwoIdleStep = (stageTwoIdleStep + 1) % STAGE_TWO_IDLE_SEQUENCE.length;
-  stageTwoIdleTimer = window.setTimeout(() => {
-    stageTwoIdleTimer = null;
-    runStageTwoIdleStep();
+function stopIdleLoop() {
+  if (idleTimer !== null) window.clearTimeout(idleTimer);
+  idleTimer = null;
+  idleStage = null;
+  idleStep = 0;
+  currentIdleSequence = [];
+}
+
+function runIdleStep(stageNumber) {
+  if (idleStep >= currentIdleSequence.length) {
+    currentIdleSequence = createIdleSequence(stageNumber);
+    idleStep = 0;
+  }
+  const [frameNumber, duration] = currentIdleSequence[idleStep];
+  showIdleFrame(stageNumber, frameNumber);
+  idleStep += 1;
+  idleTimer = window.setTimeout(() => {
+    idleTimer = null;
+    runIdleStep(stageNumber);
   }, duration);
 }
 
-function updateStageTwoIdleLoop(showFrames, playLoop) {
-  if (!showFrames) {
-    stopStageTwoIdleLoop();
-    stageTwoIdleFrames.forEach(frame => { frame.hidden = true; });
+function updateIdleLoop(stageNumber, playLoop) {
+  if (stageNumber === 0) {
+    stopIdleLoop();
+    allIdleFrames().forEach(frame => { frame.hidden = true; });
     return;
   }
   if (!playLoop || reduceMotion) {
-    stopStageTwoIdleLoop();
-    showStageTwoIdleFrame(1);
-  } else if (stageTwoIdleTimer === null) {
-    stageTwoIdleStep = 0;
-    runStageTwoIdleStep();
+    stopIdleLoop();
+    showIdleFrame(stageNumber, 1);
+  } else if (idleTimer === null || idleStage !== stageNumber) {
+    stopIdleLoop();
+    idleStage = stageNumber;
+    currentIdleSequence = createIdleSequence(stageNumber);
+    runIdleStep(stageNumber);
   }
 }
 
 function visibleCreature() {
-  return stageTwoIdleFrames.find(frame => !frame.hidden) || document.querySelector('#creature');
+  return allIdleFrames().find(frame => !frame.hidden) || document.querySelector('#creature');
 }
 
 function save() { if (!isLayoutMode) localStorage.setItem(ACTIVE_STORAGE_KEY, JSON.stringify(state)); }
@@ -490,6 +525,66 @@ function waitForImageDecode(image) {
   return loaded.then(() => image.decode ? image.decode().catch(() => undefined) : undefined);
 }
 
+function idleGeometry(stageNumber) {
+  const data = idleManifest.stages[String(stageNumber)];
+  const adjustment = STAGE_SIZE_ADJUSTMENTS[stageNumber];
+  const sizeAdjustment = typeof adjustment === 'number' ? adjustment : (
+    idleManifest.stages[String(adjustment.relativeToStage)].still_opaque_bbox_height
+      * adjustment.proportion / data.still_opaque_bbox_height
+  );
+  const pixelScale = data.still_opaque_bbox_height / data.frame_1_opaque_bbox_height * sizeAdjustment;
+  const renderWidth = data.canvas_width * pixelScale;
+  const translateX = (
+    (data.still_feet_center_x - data.still_canvas_width / 2) - data.feet_anchor_x * pixelScale
+  ) / renderWidth * 100;
+  const translateY = (
+    (data.still_lowest_opaque_row - data.still_canvas_height) - data.feet_anchor_y * pixelScale
+  ) / (data.canvas_height * pixelScale) * 100;
+  return {
+    width: (renderWidth / 1024) * CREATURE_SCALE * 100,
+    translateX,
+    translateY,
+    originX: data.feet_anchor_x / data.canvas_width * 100,
+    originY: data.feet_anchor_y / data.canvas_height * 100,
+  };
+}
+
+function applyCreatureGeometry(element, stageNumber) {
+  if (stageNumber === 0) {
+    element.style.setProperty('--creature-width', `${EGG_WIDTH_PERCENT}%`);
+    for (const property of ['--creature-anchor-x', '--creature-anchor-y', '--creature-origin-x', '--creature-origin-y']) {
+      element.style.removeProperty(property);
+    }
+    return;
+  }
+  const geometry = idleGeometry(stageNumber);
+  element.style.setProperty('--creature-width', `${geometry.width}%`);
+  element.style.setProperty('--creature-anchor-x', `${geometry.translateX}%`);
+  element.style.setProperty('--creature-anchor-y', `${geometry.translateY}%`);
+  element.style.setProperty('--creature-origin-x', `${geometry.originX}%`);
+  element.style.setProperty('--creature-origin-y', `${geometry.originY}%`);
+}
+
+function initialiseIdleFrames() {
+  const evolutionForm = document.querySelector('#evolution-form');
+  for (let stageNumber = 1; stageNumber <= 7; stageNumber += 1) {
+    const frameCount = idleManifest.stages[String(stageNumber)].frame_count;
+    const frames = Array.from({ length: frameCount }, (_, index) => {
+      const image = document.createElement('img');
+      image.className = 'sprite creature idle-frame';
+      image.src = `assets/stage-${stageNumber}-idle-${index + 1}.png`;
+      image.alt = index === 0 ? 'Creature' : '';
+      image.decoding = 'async';
+      image.loading = 'eager';
+      image.hidden = true;
+      applyCreatureGeometry(image, stageNumber);
+      evolutionForm.before(image);
+      return image;
+    });
+    idleFramesByStage.set(stageNumber, frames);
+  }
+}
+
 async function placeInitialScene() {
   const scene = document.querySelector('#scene');
   const currentSprites = ['#creature', '#sword', '#ghost']
@@ -500,7 +595,7 @@ async function placeInitialScene() {
     waitForImageDecode(document.querySelector('#scene-image')),
     waitForImageDecode(document.querySelector('.scene-frame')),
     ...currentSprites.map(waitForImageDecode),
-    ...stageTwoIdleFrames.map(waitForImageDecode),
+    ...allIdleFrames().map(waitForImageDecode),
     document.fonts?.ready ?? Promise.resolve(),
   ]);
   await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -535,22 +630,18 @@ function render() {
   const sword = document.querySelector('#sword');
   const ghost = document.querySelector('#ghost');
   const evolutionForm = document.querySelector('#evolution-form');
-  const isStageTwo = displayStage === 2;
 
   scene.className = `scene${hasInitialPlacement ? ' sprites-positioned' : ''}${isLayoutMode ? ` layout-mode${layoutMode === 'sprites' ? '' : ' layout-points'}` : ''}${activeSequence ? ` ${activeSequence.kind}` : ''}${isLayoutMode && activeSequence ? ' replaying' : ''}${reduceMotion ? ' reduced-motion' : ''}`;
   sceneImage.src = `assets/${sceneConfig.file}`;
   creature.src = `assets/${creatureConfig.file}`;
-  creature.hidden = isStageTwo;
-  creature.classList.toggle('stage-two', isStageTwo);
-  const width = displayStage === 0 ? EGG_WIDTH_PERCENT : (creatureConfig.width / 1024) * CREATURE_SCALE * 100;
-  creature.style.setProperty('--creature-width', `${width}%`);
-  stageTwoIdleFrames.forEach(frame => frame.style.setProperty('--creature-width', `${width}%`));
-  updateStageTwoIdleLoop(isStageTwo, !activeSequence);
+  creature.hidden = displayStage > 0;
+  applyCreatureGeometry(creature, displayStage);
+  updateIdleLoop(displayStage, !activeSequence);
   applyPositions(sceneConfig);
   resizeAmbientCanvas();
   renderAmbientMarkers();
   creature.classList.toggle('egg-idle', displayStage === 0 && !activeSequence && !isLayoutMode);
-  creature.classList.toggle('idle', displayStage > 0 && displayStage !== 2 && !activeSequence && !isLayoutMode);
+  creature.classList.remove('idle');
   const revealed = isLayoutMode ? 100 : activeSequence?.revealOverride ?? currentSwordReveals()[completedCount(tasks)];
   sword.style.setProperty('--sword-clip', `${100 - revealed}%`);
   sword.classList.toggle('partial', !activeSequence && !isLayoutMode && revealed > 0 && revealed < 100);
@@ -561,15 +652,12 @@ function render() {
   if (showEvolution) {
     const target = CREATURES[activeSequence.targetStage];
     evolutionForm.src = `assets/${target.file}`;
-    evolutionForm.classList.toggle('stage-two', activeSequence.targetStage === 2);
-    const targetWidth = activeSequence.targetStage === 0 ? EGG_WIDTH_PERCENT : (target.width / 1024) * CREATURE_SCALE * 100;
-    evolutionForm.style.setProperty('--creature-width', `${targetWidth}%`);
+    applyCreatureGeometry(evolutionForm, activeSequence.targetStage);
     evolutionForm.style.opacity = activeSequence.showNew ? '1' : '0';
     visibleCreature().style.opacity = activeSequence.showNew ? '0' : '1';
   } else {
-    evolutionForm.classList.remove('stage-two');
     creature.style.opacity = '';
-    stageTwoIdleFrames.forEach(frame => { frame.style.opacity = ''; });
+    allIdleFrames().forEach(frame => { frame.style.opacity = ''; });
   }
 
   document.querySelector('#day-number').textContent = offset + 1;
@@ -834,7 +922,7 @@ function setupLayoutTools() {
   preview.addEventListener('change', () => { layoutPreview = Number(preview.value); render(); });
   const draggableSprites = [
     ...['creature', 'ghost', 'sword'].map(spriteName => [spriteName, document.querySelector(`#${spriteName}`)]),
-    ...stageTwoIdleFrames.map(element => ['creature', element]),
+    ...allIdleFrames().map(element => ['creature', element]),
   ];
   for (const [spriteName, element] of draggableSprites) {
     element.addEventListener('pointerdown', event => {
@@ -976,10 +1064,18 @@ if (override) {
   banner.hidden = false;
   banner.textContent = `Testing date: ${override}`;
 }
-setupLayoutTools();
-setupNormalOath();
-setupDemoMode();
-render();
-new ResizeObserver(() => recalculateSceneLayout()).observe(document.querySelector('#scene'));
-placeInitialScene();
-startAmbient();
+async function startApp() {
+  const response = await fetch('assets/idle-manifest.json');
+  if (!response.ok) throw new Error(`Could not load idle manifest: ${response.status}`);
+  idleManifest = await response.json();
+  initialiseIdleFrames();
+  setupLayoutTools();
+  setupNormalOath();
+  setupDemoMode();
+  render();
+  new ResizeObserver(() => recalculateSceneLayout()).observe(document.querySelector('#scene'));
+  placeInitialScene();
+  startAmbient();
+}
+
+startApp();

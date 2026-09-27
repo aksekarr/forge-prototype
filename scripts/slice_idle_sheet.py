@@ -10,6 +10,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE_PATTERN = ROOT / "assets" / "originals" / "stage-{}-idle-sheet.png"
 OUTPUT_PATTERN = ROOT / "assets" / "stage-{}-idle-{}.png"
+STILL_PATTERN = ROOT / "assets" / "stage-{}.png"
 MANIFEST = ROOT / "assets" / "idle-manifest.json"
 STAGES = range(1, 8)
 ALPHA_THRESHOLD = 40
@@ -78,6 +79,29 @@ def analyse_stage(stage):
     }
 
 
+def measure_still(stage):
+    still = Image.open(Path(str(STILL_PATTERN).format(stage))).convert("RGBA")
+    alpha = still.getchannel("A")
+    points = [
+        (x, y)
+        for y in range(still.height)
+        for x in range(still.width)
+        if alpha.getpixel((x, y)) > ALPHA_THRESHOLD
+    ]
+    xs = [x for x, _ in points]
+    ys = [y for _, y in points]
+    opaque_rows = sorted(set(ys))
+    feet_rows = set(opaque_rows[-max(1, ceil(len(opaque_rows) * 0.06)) :])
+    feet_xs = [x for x, y in points if y in feet_rows]
+    return {
+        "still_canvas_width": still.width,
+        "still_canvas_height": still.height,
+        "still_opaque_bbox_height": max(ys) - min(ys) + 1,
+        "still_lowest_opaque_row": max(ys),
+        "still_feet_center_x": floor(sum(feet_xs) / len(feet_xs) + 0.5),
+    }
+
+
 def write_stage(analysis):
     stage = analysis["stage"]
     sheet = analysis["sheet"]
@@ -117,6 +141,7 @@ def write_stage(analysis):
         "feet_anchor_x": anchor_x,
         "feet_anchor_y": anchor_y,
         "frame_1_opaque_bbox_height": frame_one_height,
+        **measure_still(stage),
     }
 
 
