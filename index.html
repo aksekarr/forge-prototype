@@ -69,12 +69,17 @@
         <button id="preview-closing" type="button">Preview closing</button>
       </section>
     </section>
-    <section id="oath-card" class="panel oath-card" aria-label="The Oath">
-      <button id="read-oath" class="secondary-action" type="button" aria-controls="shared-oath">Read the Oath</button>
-    </section>
-    <section class="panel oath-card tarot-panel" aria-label="Tarot">
-      <button id="tarot-open" class="tarot-open" type="button" aria-controls="tarot-drawer" aria-haspopup="dialog">Tarot</button>
-    </section>
+    <div id="oath-card" class="oath-card drawer-stack">
+      <section class="panel" aria-label="The Oath">
+        <button id="read-oath" class="secondary-action" type="button" aria-controls="tarot-drawer" aria-haspopup="dialog">Read the Oath</button>
+      </section>
+      <section class="panel" aria-label="The Ghost">
+        <button id="ghost-open" class="tarot-open" type="button" aria-controls="tarot-drawer" aria-haspopup="dialog">The Ghost</button>
+      </section>
+      <section class="panel" aria-label="Tarot">
+        <button id="tarot-open" class="tarot-open" type="button" aria-controls="tarot-drawer" aria-haspopup="dialog">Tarot</button>
+      </section>
+    </div>
     </div>
   </main>
   <section class="about" aria-labelledby="about-title">
@@ -110,6 +115,7 @@
       <h2 id="profile-welcome-title"><span id="profile-welcome-name"></span>,</h2>
       <p id="profile-welcome-start"></p>
       <p id="profile-welcome-deeds"></p>
+      <p>Tick only what you did. No one checks; a false tick costs only you.</p>
       <p>Don't carry the whole week. Carry only the next step, and give it your care. That is enough. It always was.</p>
       <button id="profile-welcome-close" type="button"></button>
     </section>

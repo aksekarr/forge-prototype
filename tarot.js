@@ -118,7 +118,9 @@
       panel.textContent = '✦';
       interior.append(panel);
     });
-    interior.append(status, grid);
+    const content = document.createElement('div');
+    content.className = 'tarot-drawer-content';
+    interior.append(content);
     drawer.append(header, interior);
 
     const viewer = document.createElement('dialog');
@@ -149,6 +151,7 @@
     close.addEventListener('click', function () { drawer.close(); });
     viewerClose.addEventListener('click', function () { viewer.close(); });
     let selectedSlot;
+    let opener = trigger;
     viewer.addEventListener('close', function () {
       largeCard.replaceChildren();
       if (selectedSlot) selectedSlot.focus({ preventScroll: true });
@@ -156,8 +159,43 @@
     drawer.addEventListener('close', function () {
       drawer.classList.remove('tarot-drawer-enter');
       document.documentElement.classList.remove('tarot-drawer-open');
-      trigger.focus({ preventScroll: true });
+      opener.focus({ preventScroll: true });
     });
+
+    // Every drawer uses this same dialog, frame, header and dismissal handlers.
+    function openDrawer(label, nodes, reading, button) {
+      opener = button;
+      title.textContent = label;
+      close.setAttribute('aria-label', 'Close ' + label + ' drawer');
+      drawer.classList.toggle('tarot-drawer-reading', reading);
+      content.replaceChildren(...nodes);
+      content.scrollTop = 0;
+      document.documentElement.classList.add('tarot-drawer-open');
+      drawer.showModal();
+      // Start motion after native dialog focus has settled, avoiding Safari scroll jumps.
+      requestAnimationFrame(function () {
+        if (drawer.open) drawer.classList.add('tarot-drawer-enter');
+      });
+    }
+
+    // Move the existing prose, keeping the demo's source and reveal untouched.
+    if (new URLSearchParams(location.search).get('demo') !== '1') {
+      const oathSource = document.querySelector('#shared-oath');
+      const oathNodes = Array.from(oathSource.querySelector('.oath-panel').children)
+        .filter(function (node) { return node.tagName !== 'H2'; });
+      const about = document.querySelector('[aria-labelledby="about-title"]');
+      const ghostNodes = Array.from(about.querySelector('article').querySelectorAll('p'));
+      oathNodes.concat(ghostNodes).forEach(function (node) { node.remove(); });
+      oathSource.remove();
+      about.remove();
+      window.MirrorwoodTarot.openOath = function () {
+        openDrawer('The Oath', oathNodes, true, document.getElementById('read-oath'));
+      };
+      const ghostTrigger = document.getElementById('ghost-open');
+      ghostTrigger.addEventListener('click', function () {
+        openDrawer('The Ghost', ghostNodes, true, ghostTrigger);
+      });
+    }
 
     let loading;
     trigger.addEventListener('click', async function () {
@@ -196,12 +234,7 @@
         status.textContent = 'Cards could not be loaded. Close and reopen Tarot to retry.';
       }
       trigger.disabled = false;
-      document.documentElement.classList.add('tarot-drawer-open');
-      drawer.showModal();
-      // Start motion after native dialog focus has settled, avoiding Safari scroll jumps.
-      requestAnimationFrame(function () {
-        if (drawer.open) drawer.classList.add('tarot-drawer-enter');
-      });
+      openDrawer('Tarot', [status, grid], false, trigger);
     });
   }
 

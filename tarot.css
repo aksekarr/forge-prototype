@@ -168,3 +168,15 @@ body > .tarot-drawer { position: fixed; }
 
 @keyframes tarot-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .tarot-drawer-enter { animation: none; } }
+
+/* Reading content shares the frame, but scrolls within a parchment lining. */
+.tarot-drawer-reading[open] { display: flex; flex-direction: column; height: 80dvh; overflow: hidden; }
+.tarot-drawer-reading .tarot-drawer-interior { display: flex; flex: 1; min-height: 0; }
+.tarot-drawer-reading .tarot-drawer-interior::before { background: #f3e4c8; }
+.tarot-drawer-reading .tarot-drawer-content {
+  width: 100%; max-width: 68ch; margin: 0 auto; padding: 8px 12px;
+  overflow-y: auto; overscroll-behavior: contain;
+  font: 400 clamp(18px, 1.7vw, 23px) / 1.5 'IM Fell English', serif;
+}
+.tarot-drawer-reading p { margin: 0 0 1em; }
+.tarot-drawer-reading .oath-verse { font-size: inherit; line-height: 1.4; }

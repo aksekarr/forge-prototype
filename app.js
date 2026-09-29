@@ -1153,7 +1153,7 @@ function setupOathReveal(button, oath) {
 
 function setupNormalOath() {
   if (isDemoMode) return;
-  setupOathReveal(document.querySelector('#read-oath'), document.querySelector('#shared-oath'));
+  document.querySelector('#read-oath').addEventListener('click', () => window.MirrorwoodTarot.openOath());
 }
 
 function openParchmentDialog(dialog, closeButton, onClose) {
