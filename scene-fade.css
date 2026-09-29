@@ -1,0 +1,36 @@
+/* Keep the original scene geometry while dissolving its outer edges. */
+.scene-frame { display: none; }
+
+/* The scene's solid fallback must not leave a rectangle behind the fade. */
+#scene { background: transparent; }
+
+/* Keep sprites and foreground effects outside the background masks. */
+#scene > .scene-image,
+#scene > .ambient-canvas,
+#scene > .ambient-markers,
+#scene > .scene-dimmer {
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 12%, #000 88%, transparent),
+    linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent, #000 12%, #000 88%, transparent),
+    linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+  mask-composite: intersect;
+}
+
+.scene-frame-wrap { isolation: isolate; }
+.scene-frame-wrap::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--frame-top) - 30px) calc(var(--frame-right) - 30px)
+    calc(var(--frame-bottom) - 30px) calc(var(--frame-left) - 30px);
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse, rgba(90, 140, 70, .18), transparent 70%);
+}
+
+/* The existing narrow layout gives the scene a 28px bottom margin. */
+@media (max-width: 899px) {
+  .scene-frame-wrap::before { bottom: calc(var(--frame-bottom) + 28px - 30px); }
+}
