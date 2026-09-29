@@ -1,0 +1,219 @@
+{
+  "_notes": [
+    "Season 1 tarot cards. A card is a concept (id, name); each edition carries its own art and text.",
+    "layout 'paragraph': lines joined with spaces, then closing (italic) after a space. layout 'verse': each line on its own line, closing (italic) as the last line.",
+    "Standard cards show 'numeral · name'. Shiny cards (numeral null) show '✦ name ✦'.",
+    "Frame art window is transparent; draw art underneath at left 92, top 196, 840x840 on the 1024x1536 frame. See ASSETS.md."
+  ],
+  "season": 1,
+  "frame": "assets/tarot/card-frame.webp",
+  "cards": [
+    {
+      "id": "mirror",
+      "name": "The Mirror",
+      "numeral": "I",
+      "shiny": false,
+      "editions": [
+        {
+          "edition": 1,
+          "art": "assets/tarot/art-mirror.webp",
+          "layout": "paragraph",
+          "lines": [
+            "It shows you nothing you did not bring to it. Come empty-handed and it greets you empty-handed, without reproach. Come carrying one small deed and it holds that deed up to the light as though it were treasure."
+          ],
+          "closing": "It was."
+        }
+      ]
+    },
+    {
+      "id": "excuse",
+      "name": "The Excuse",
+      "numeral": "II",
+      "shiny": false,
+      "editions": [
+        {
+          "edition": 1,
+          "art": "assets/tarot/art-excuse.webp",
+          "layout": "paragraph",
+          "lines": [
+            "It always arrives well-dressed and speaking reason. It is tired, and right to be tired. It is busy, and the business is real. Hear it out. Then notice that everything it said was true,"
+          ],
+          "closing": "and the work is still not done."
+        }
+      ]
+    },
+    {
+      "id": "liar",
+      "name": "The Liar",
+      "numeral": "III",
+      "shiny": false,
+      "editions": [
+        {
+          "edition": 1,
+          "art": "assets/tarot/art-liar.webp",
+          "layout": "paragraph",
+          "lines": [
+            "No one checks the tick. That is the whole of the test. A mark you did not earn costs the world nothing, and costs you everything the mark was for. A false tick is a letter you write to yourself,"
+          ],
+          "closing": "in a hand you will recognise."
+        }
+      ]
+    },
+    {
+      "id": "tomorrow",
+      "name": "Tomorrow",
+      "numeral": "IV",
+      "shiny": false,
+      "editions": [
+        {
+          "edition": 1,
+          "art": "assets/tarot/art-tomorrow.webp",
+          "layout": "paragraph",
+          "lines": [
+            "The gentlest of thieves. It takes nothing today; it only offers to hold the work for you. It has held a great deal by now."
+          ],
+          "closing": "It has never once given any of it back."
+        }
+      ]
+    },
+    {
+      "id": "stone",
+      "name": "The Stone",
+      "numeral": "V",
+      "shiny": false,
+      "editions": [
+        {
+          "edition": 1,
+          "art": "assets/tarot/art-stone.webp",
+          "layout": "paragraph",
+          "lines": [
+            "It is not the tower. It will never look like the tower. Lay it anyway. The mason who waits to feel he is building something great lays nothing."
+          ],
+          "closing": "The one who lays a stone each day never needs to feel it."
+        }
+      ]
+    },
+    {
+      "id": "witness",
+      "name": "The Witness",
+      "numeral": "VI",
+      "shiny": false,
+      "editions": [
+        {
+          "edition": 1,
+          "art": "assets/tarot/art-witness.webp",
+          "layout": "paragraph",
+          "lines": [
+            "Most of what you do will be seen by no one. Do it the same. There is always one who watches, who cannot be fooled and cannot be left behind."
+          ],
+          "closing": "They see all of it, and they never look away."
+        }
+      ]
+    },
+    {
+      "id": "return",
+      "name": "The Return",
+      "numeral": "VII",
+      "shiny": false,
+      "editions": [
+        {
+          "edition": 1,
+          "art": "assets/tarot/art-return.webp",
+          "layout": "paragraph",
+          "lines": [
+            "There will be a day you miss. When it comes, know this: the clearing will not notice. The path will be where you left it, the gate unlocked. No penance is owed, no ground to win back."
+          ],
+          "closing": "Only the next step, which weighs exactly what it always weighed."
+        }
+      ]
+    },
+    {
+      "id": "calm",
+      "name": "The Calm",
+      "numeral": "VIII",
+      "shiny": false,
+      "editions": [
+        {
+          "edition": 1,
+          "art": "assets/tarot/art-calm.webp",
+          "layout": "paragraph",
+          "lines": [
+            "Stillness is not the ghost’s victory; it is the ground the next step stands on. Lie down. Nothing is being lost."
+          ],
+          "closing": "The work will wait, and it needs you whole."
+        }
+      ]
+    },
+    {
+      "id": "ember",
+      "name": "The Ember",
+      "numeral": "IX",
+      "shiny": false,
+      "editions": [
+        {
+          "edition": 1,
+          "art": "assets/tarot/art-ember.webp",
+          "layout": "verse",
+          "lines": [
+            "It never went out.",
+            "It was forgotten, and the wood greyed for it.",
+            "Go back."
+          ],
+          "closing": "It burns still."
+        }
+      ]
+    },
+    {
+      "id": "rumble",
+      "name": "The Rumble",
+      "numeral": null,
+      "shiny": true,
+      "editions": [
+        {
+          "edition": 1,
+          "art": "assets/tarot/art-rumble.webp",
+          "layout": "verse",
+          "lines": [
+            "Some days it will not leave quietly.",
+            "Then don’t ask it to."
+          ],
+          "closing": "Meet it."
+        }
+      ]
+    },
+    {
+      "id": "fury",
+      "name": "The Fury",
+      "numeral": null,
+      "shiny": true,
+      "editions": [
+        {
+          "edition": 1,
+          "art": "assets/tarot/art-fury.webp",
+          "layout": "paragraph",
+          "lines": [
+            "It is not rage, and it is not haste. It is the quiet refusal to be the one who meant to. Every year spent waiting stands behind it now, and it will not go back."
+          ],
+          "closing": "It has decided. It is already moving."
+        }
+      ]
+    },
+    {
+      "id": "ascent",
+      "name": "The Ascent",
+      "numeral": null,
+      "shiny": true,
+      "editions": [
+        {
+          "edition": 1,
+          "art": "assets/tarot/art-ascent.webp",
+          "layout": "verse",
+          "lines": [
+            "Forward."
+          ],
+          "closing": "To the stars."
+        }
+      ]
+    }
+  ]
+}
