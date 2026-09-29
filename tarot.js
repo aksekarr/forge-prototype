@@ -109,7 +109,17 @@
     status.setAttribute('role', 'status');
     const grid = document.createElement('div');
     grid.className = 'tarot-slots';
-    drawer.append(header, status, grid);
+    const interior = document.createElement('div');
+    interior.className = 'tarot-drawer-interior';
+    ['left', 'right'].forEach(function (side) {
+      const panel = document.createElement('div');
+      panel.className = 'tarot-side-panel tarot-side-panel-' + side;
+      panel.setAttribute('aria-hidden', 'true');
+      panel.textContent = '✦';
+      interior.append(panel);
+    });
+    interior.append(status, grid);
+    drawer.append(header, interior);
 
     const viewer = document.createElement('dialog');
     viewer.className = 'tarot-viewer';
