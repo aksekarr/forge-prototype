@@ -3,7 +3,8 @@
     "Season 1 tarot cards. A card is a concept (id, name); each edition carries its own art and text.",
     "layout 'paragraph': lines joined with spaces, then closing (italic) after a space. layout 'verse': each line on its own line, closing (italic) as the last line.",
     "Standard cards show 'numeral · name'. Shiny cards (numeral null) show '✦ name ✦'.",
-    "Frame art window is transparent; draw art underneath at left 92, top 196, 840x840 on the 1024x1536 frame. See ASSETS.md."
+    "Frame art window is transparent; draw art underneath at left 92, top 196, 840x840 on the 1024x1536 frame. See ASSETS.md.",
+    "Shiny cards carry 'form' (creature stage 1-7): a shiny can only drop once the creature has reached that form."
   ],
   "season": 1,
   "frame": "assets/tarot/card-frame.webp",
@@ -179,7 +180,8 @@
           ],
           "closing": "Meet it."
         }
-      ]
+      ],
+      "form": 7
     },
     {
       "id": "fury",
@@ -196,7 +198,8 @@
           ],
           "closing": "It has decided. It is already moving."
         }
-      ]
+      ],
+      "form": 7
     },
     {
       "id": "ascent",
@@ -213,7 +216,8 @@
           ],
           "closing": "To the stars."
         }
-      ]
+      ],
+      "form": 7
     }
   ]
 }
