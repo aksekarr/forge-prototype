@@ -84,3 +84,68 @@
   font-style: italic;
   font-synthesis: style;
 }
+
+.tarot-open,
+.tarot-close {
+  border: 2px solid #603014;
+  background: #c96b28;
+  color: #fff4cf;
+  box-shadow: 2px 2px 0 #3a1d0d;
+  cursor: pointer;
+  font-family: 'Pixelify Sans', system-ui, sans-serif;
+  padding: 8px 10px;
+}
+
+.tarot-open { display: block; width: 100%; margin-top: 10px; }
+.tarot-drawer-open { overflow: hidden; }
+
+.tarot-drawer,
+.tarot-viewer { box-sizing: border-box; color: #2b160e; }
+.tarot-drawer::backdrop,
+.tarot-viewer::backdrop { background: rgb(20 12 8 / 65%); }
+
+.tarot-drawer {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  max-height: 100dvh;
+  margin: auto 0 0;
+  height: fit-content;
+  padding: 12px clamp(8px, 2vw, 24px) max(16px, env(safe-area-inset-bottom));
+  border: 0;
+  border-top: 3px solid #603014;
+  background: #f3e4c8;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.tarot-drawer-enter { animation: tarot-slide-up 220ms ease-out; }
+.tarot-drawer-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 auto 12px; max-width: 1200px; }
+.tarot-drawer-title { margin: 0; font: 600 24px 'Pixelify Sans', sans-serif; }
+.tarot-drawer-status { text-align: center; }
+.tarot-slots { display: grid; grid-template-columns: repeat(6, minmax(0, 190px)); gap: clamp(4px, 1vw, 12px); justify-content: center; }
+.tarot-slot { box-sizing: border-box; display: block; width: 100%; min-width: 0; aspect-ratio: 2 / 3; margin: 0; padding: 0; }
+.tarot-slot-earned { border: 0; background: transparent; color: inherit; cursor: pointer; text-align: inherit; }
+.tarot-slot-empty { display: grid; place-items: center; border: 1px solid #a88b62; border-radius: 4px; color: #896942; font: 500 clamp(12px, 2.5vw, 28px) 'Pixelify Sans', sans-serif; }
+.tarot-slot-earned:focus-visible,
+.tarot-open:focus-visible,
+.tarot-close:focus-visible { outline: 3px solid #7b240d; outline-offset: 3px; }
+
+.tarot-viewer {
+  position: fixed;
+  inset: 0;
+  width: min(480px, calc(100vw - 32px), calc((100dvh - 76px) / 1.5));
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+.tarot-viewer > .tarot-close { display: block; margin: 0 0 10px auto; }
+.tarot-large-card { width: 100%; }
+
+@keyframes tarot-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .tarot-drawer-enter { animation: none; } }

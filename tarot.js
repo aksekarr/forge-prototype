@@ -72,5 +72,130 @@
     return element;
   }
 
-  window.MirrorwoodTarot = { loadCards: loadCards, renderCard: renderCard };
+  let drawerCards = [];
+
+  // Future earned progress has one integration point. Preview never writes storage.
+  function earnedTarotIds() {
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      const preview = new URLSearchParams(location.search).get('tarotPreview');
+      if (preview === 'all') return drawerCards.map(function (card) { return card.id; });
+      if (preview !== null) return preview.split(',').map(function (id) { return id.trim(); });
+    }
+    return [];
+  }
+
+  function setupDrawer() {
+    const trigger = document.getElementById('tarot-open');
+    if (!trigger) return;
+
+    const drawer = document.createElement('dialog');
+    drawer.id = 'tarot-drawer';
+    drawer.className = 'tarot-drawer';
+    drawer.setAttribute('aria-labelledby', 'tarot-drawer-title');
+    const header = document.createElement('div');
+    header.className = 'tarot-drawer-header';
+    const title = document.createElement('h2');
+    title.id = 'tarot-drawer-title';
+    title.className = 'tarot-drawer-title';
+    title.textContent = 'Tarot';
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'tarot-close';
+    close.textContent = 'Close';
+    close.setAttribute('aria-label', 'Close tarot drawer');
+    header.append(title, close);
+    const status = document.createElement('p');
+    status.className = 'tarot-drawer-status';
+    status.setAttribute('role', 'status');
+    const grid = document.createElement('div');
+    grid.className = 'tarot-slots';
+    drawer.append(header, status, grid);
+
+    const viewer = document.createElement('dialog');
+    viewer.className = 'tarot-viewer';
+    const viewerClose = document.createElement('button');
+    viewerClose.type = 'button';
+    viewerClose.className = 'tarot-close';
+    viewerClose.textContent = 'Close card';
+    const largeCard = document.createElement('div');
+    largeCard.className = 'tarot-large-card';
+    viewer.append(viewerClose, largeCard);
+    document.body.append(drawer, viewer);
+
+    // A dialog backdrop targets the dialog itself; padding is still inside the tray.
+    [drawer, viewer].forEach(function (dialog) {
+      let startedOutside = false;
+      function outside(event) {
+        const bounds = dialog.getBoundingClientRect();
+        return event.target === dialog && (event.clientX < bounds.left ||
+          event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom);
+      }
+      dialog.addEventListener('pointerdown', function (event) { startedOutside = outside(event); });
+      dialog.addEventListener('click', function (event) {
+        if (startedOutside && outside(event)) dialog.close();
+        startedOutside = false;
+      });
+    });
+    close.addEventListener('click', function () { drawer.close(); });
+    viewerClose.addEventListener('click', function () { viewer.close(); });
+    let selectedSlot;
+    viewer.addEventListener('close', function () {
+      largeCard.replaceChildren();
+      if (selectedSlot) selectedSlot.focus({ preventScroll: true });
+    });
+    drawer.addEventListener('close', function () {
+      drawer.classList.remove('tarot-drawer-enter');
+      document.documentElement.classList.remove('tarot-drawer-open');
+      trigger.focus({ preventScroll: true });
+    });
+
+    let loading;
+    trigger.addEventListener('click', async function () {
+      trigger.disabled = true;
+      status.hidden = false;
+      status.textContent = 'Loading cards…';
+      try {
+        if (!loading) loading = loadCards().catch(function (error) { loading = null; throw error; });
+        const data = await loading;
+        drawerCards = data.cards;
+        const earned = new Set(earnedTarotIds());
+        grid.replaceChildren();
+        drawerCards.forEach(function (card) {
+          const slot = document.createElement(earned.has(card.id) ? 'button' : 'div');
+          slot.className = 'tarot-slot';
+          if (earned.has(card.id)) {
+            slot.type = 'button';
+            slot.classList.add('tarot-slot-earned');
+            slot.setAttribute('aria-label', 'View ' + card.name);
+            slot.setAttribute('aria-haspopup', 'dialog');
+            slot.append(renderCard(card));
+            slot.addEventListener('click', function () {
+              selectedSlot = slot;
+              largeCard.replaceChildren(renderCard(card));
+              viewer.setAttribute('aria-label', card.name);
+              viewer.showModal();
+            });
+          } else {
+            slot.classList.add('tarot-slot-empty');
+            slot.textContent = card.numeral === null ? '✦' : card.numeral;
+          }
+          grid.append(slot);
+        });
+        status.hidden = true;
+      } catch (error) {
+        status.textContent = 'Cards could not be loaded. Close and reopen Tarot to retry.';
+      }
+      trigger.disabled = false;
+      document.documentElement.classList.add('tarot-drawer-open');
+      drawer.showModal();
+      // Start motion after native dialog focus has settled, avoiding Safari scroll jumps.
+      requestAnimationFrame(function () {
+        if (drawer.open) drawer.classList.add('tarot-drawer-enter');
+      });
+    });
+  }
+
+  window.MirrorwoodTarot = { loadCards: loadCards, renderCard: renderCard, earnedTarotIds: earnedTarotIds };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupDrawer);
+  else setupDrawer();
 }());

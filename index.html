@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Pixelify+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="tarot.css">
 </head>
 <body>
   <img class="wood-backdrop" src="assets/bg-wood.png" alt="" aria-hidden="true">
@@ -70,6 +71,7 @@
     </section>
     <section id="oath-card" class="panel oath-card" aria-label="The Oath">
       <button id="read-oath" class="secondary-action" type="button" aria-controls="shared-oath">Read the Oath</button>
+      <button id="tarot-open" class="tarot-open" type="button" aria-controls="tarot-drawer" aria-haspopup="dialog">Tarot</button>
     </section>
     </div>
   </main>
@@ -129,6 +131,7 @@
       <button id="closing-message-close" type="button">Rest</button>
     </section>
   </dialog>
+  <script src="tarot.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
