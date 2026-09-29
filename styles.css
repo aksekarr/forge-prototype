@@ -285,3 +285,13 @@ h2 { color: #71320f; font-size: 19px; text-transform: uppercase; }
   .oath-card { grid-column: 1; grid-row: 1; justify-self: end; }
   .demo-mode .demo-panel { grid-column: 1; grid-row: 1; justify-self: end; margin-top: 2.25vh; }
 }
+
+/* Tarot follows the Oath without changing the scene or task grid placement. */
+.demo-mode .tarot-panel { display: none; }
+@media (min-width: 900px) and (max-width: 1319px) {
+  .tarot-panel { grid-row: 3; }
+}
+@media (min-width: 1320px) {
+  /* Both matching panels have the same height and share the left grid cell. */
+  .tarot-panel { transform: translateY(calc(100% + 16px)); }
+}

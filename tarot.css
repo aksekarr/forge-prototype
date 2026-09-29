@@ -96,7 +96,7 @@
   padding: 8px 10px;
 }
 
-.tarot-open { display: block; width: 100%; margin-top: 10px; }
+.tarot-open { display: block; width: 100%; margin: 0; }
 .tarot-drawer-open { overflow: hidden; }
 
 .tarot-drawer,
@@ -109,7 +109,7 @@
   inset: 0;
   width: 100%;
   max-width: none;
-  max-height: 100dvh;
+  max-height: 80dvh;
   margin: auto 0 0;
   height: fit-content;
   padding: 0;
@@ -122,6 +122,8 @@
 }
 
 .tarot-drawer-enter { animation: tarot-slide-up 220ms ease-out; }
+/* Override the app's body-child positioning so the tray stays viewport-bound. */
+body > .tarot-drawer { position: fixed; }
 .tarot-drawer-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0; padding: 12px 20px 0; }
 .tarot-drawer-title { margin: 0; font: 600 24px 'Pixelify Sans', sans-serif; text-transform: uppercase; color: #f3d48a; text-shadow: 2px 2px 0 #1c0905; }
 .tarot-drawer-header > .tarot-close { background: #c96b28; border-color: #603014; color: #fff4cf; box-shadow: 2px 2px 0 #1c0905; }
@@ -139,7 +141,9 @@
 .tarot-side-panel-left { left: 14px; border-right: 2px solid #b8801f; background: repeating-linear-gradient(0deg, #3a1d0d 0 18px, #4a2812 18px 20px); }
 .tarot-side-panel-right { right: 14px; border-left: 2px solid #b8801f; background: repeating-linear-gradient(0deg, #3a1d0d 0 18px, #4a2812 18px 20px); }
 .tarot-drawer-status { text-align: center; color: #f3d48a; }
-.tarot-slots { display: grid; grid-template-columns: repeat(6, minmax(0, 190px)); gap: clamp(4px, 1vw, 12px); justify-content: center; }
+/* Two 2:3 rows use three times the card width in height. Reserve 148px
+   for the frame, header, interior padding and the largest row gap. */
+.tarot-slots { display: grid; grid-template-columns: repeat(6, minmax(0, min(190px, max(0px, calc((80dvh - 148px) / 3))))); gap: clamp(4px, 1vw, 12px); justify-content: center; }
 .tarot-slot { box-sizing: border-box; display: block; width: 100%; min-width: 0; aspect-ratio: 2 / 3; margin: 0; padding: 0; }
 .tarot-slot-earned { border: 0; background: transparent; color: inherit; cursor: pointer; text-align: inherit; filter: drop-shadow(0 6px 6px rgba(0,0,0,.7)); }
 .tarot-slot-empty { display: grid; place-items: center; border: 2px dashed rgba(217,164,65,.45); border-radius: 4px; box-shadow: inset 0 4px 10px rgba(0,0,0,.5); color: rgba(243,212,138,.55); font: 500 clamp(12px, 2.5vw, 28px) 'Pixelify Sans', sans-serif; }
