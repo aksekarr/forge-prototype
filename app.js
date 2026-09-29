@@ -134,7 +134,7 @@ function profileSetup() {
   const name = (params.get('n') || '').trim();
   if (![3, 4].includes(tasks.length) || tasks.some(task => task.length < 1 || task.length > 40) || name.length < 1 || name.length > 30) return null;
   const requestedStart = validStartDate(params.get('start'));
-  return { firstDay: requestedStart && requestedStart >= realToday ? requestedStart : realToday, days: {}, tasks, name };
+  return { firstDay: requestedStart && requestedStart >= realToday ? requestedStart : realToday, days: {}, tasks, name, ...newProfileRules() };
 }
 
 function demoTasks(count) {
@@ -310,7 +310,7 @@ function currentSwordReveals() { return isDemoMode || (isProfileMode && currentT
 function completedCount(tasks) { return currentTasks().filter(task => tasks[task]).length; }
 function isComplete(tasks) { return completedCount(tasks) === currentTasks().length; }
 function completedDays() { return Object.values(state.days).filter(day => isComplete(day.tasks || {})).length; }
-function stage() { return Math.min(7, completedDays()); }
+function stage() { return isFortnightProfile() ? fortnightStage() : Math.min(7, completedDays()); }
 function recordDate(offset) {
   const [y, m, d] = state.firstDay.split('-').map(Number);
   const date = new Date(y, m - 1, d + offset);
@@ -761,7 +761,7 @@ function render() {
 
   document.querySelector('#day-number').textContent = offset + 1;
   document.querySelector('#date-label').textContent = beforeFirstDay
-    ? (dayOffset(today) === -1 ? 'Your seven days begin tomorrow.' : `Your seven days begin on ${formatDate(state.firstDay)}.`)
+    ? (isFortnightProfile() ? fortnightStartMessage() : dayOffset(today) === -1 ? 'Your seven days begin tomorrow.' : `Your seven days begin on ${formatDate(state.firstDay)}.`)
     : formatDate(today);
   if (isProfileMode) document.querySelector('#tasks-title').firstChild.nodeValue = state.name ? `${state.name} · Today ` : 'Today ';
   const taskList = document.querySelector('#task-list');
@@ -854,6 +854,7 @@ function runRetract() {
 }
 
 async function runCompletion(countBefore) {
+  if (isFortnightProfile()) return runFortnightCompletion(countBefore);
   const completedAfter = completedDays();
   const afterStage = Math.min(7, completedAfter);
   const beforeStage = Math.min(7, completedAfter - 1);
@@ -1189,7 +1190,9 @@ function setupProfileWelcome() {
   const closeButton = document.querySelector('#profile-welcome-close');
   const beforeFirstDay = isBeforeFirstDay();
   document.querySelector('#profile-welcome-name').textContent = state.name;
-  document.querySelector('#profile-welcome-start').textContent = beforeFirstDay
+  document.querySelector('#profile-welcome-start').textContent = isFortnightProfile()
+    ? `${beforeFirstDay ? 'Nothing is asked of you tonight. ' : ''}${fortnightStartMessage()}`
+    : beforeFirstDay
     ? dayOffset(today) === -1
       ? 'Nothing is asked of you tonight. Your seven days begin tomorrow.'
       : `Nothing is asked of you tonight. Your seven days begin on ${new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(new Date(`${state.firstDay}T00:00:00`))}.`
@@ -1209,6 +1212,7 @@ function sevenDayRunComplete() {
 }
 
 function openClosingMessage(preview = false) {
+  if (isFortnightProfile()) return;
   if (!preview && (state.closingSeen || !sevenDayRunComplete())) return;
   const dialog = document.querySelector('#closing-message');
   const closeButton = document.querySelector('#closing-message-close');
@@ -1229,7 +1233,7 @@ function maybeShowClosingAfterCompletion() {
 }
 
 function setupClosingMessage() {
-  if (isLayoutMode || state.closingSeen || !sevenDayRunComplete()) return;
+  if (isFortnightProfile() || isLayoutMode || state.closingSeen || !sevenDayRunComplete()) return;
   const welcome = document.querySelector(isDemoMode ? '#demo-welcome' : '#profile-welcome');
   if (welcome.open) welcome.addEventListener('close', () => openClosingMessage(), { once: true });
   else openClosingMessage();
@@ -1293,6 +1297,7 @@ if (override) {
   banner.textContent = `Testing date: ${override}`;
 }
 async function startApp() {
+  MirrorwoodTarot.setEarnedSource(fortnightEarnedCardIds);
   const response = await fetch('assets/idle-manifest.json');
   if (!response.ok) throw new Error(`Could not load idle manifest: ${response.status}`);
   idleManifest = await response.json();

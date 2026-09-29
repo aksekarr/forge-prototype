@@ -252,15 +252,20 @@
   }
 
   let drawerCards = [];
+  let earnedSource = function () { return []; };
 
-  // Future earned progress has one integration point. Preview never writes storage.
+  function setEarnedSource(source) {
+    earnedSource = source;
+  }
+
+  // Read current earned progress whenever the drawer opens. Preview never writes storage.
   function earnedTarotIds() {
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
       const preview = new URLSearchParams(location.search).get('tarotPreview');
       if (preview === 'all') return drawerCards.map(function (card) { return card.id; });
       if (preview !== null) return preview.split(',').map(function (id) { return id.trim(); });
     }
-    return [];
+    return earnedSource();
   }
 
   function setupDrawer() {
@@ -350,6 +355,7 @@
   }
 
   window.MirrorwoodTarot = { loadCards: loadCards, renderCard: renderCard, revealCard: revealCard, earnedTarotIds: earnedTarotIds,
+    setEarnedSource: setEarnedSource,
     openOath: function () { return window.MirrorwoodDrawers.openOath(); } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup);
   else setup();
