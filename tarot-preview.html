@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mirrorwood · Tarot preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Pixelify+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="tarot.css">
+  <script src="tarot.js" defer></script>
+  <style>
+    body { margin: 0; padding: 24px; background: #201c19; color: #f3e4c8; font-family: 'IM Fell English', serif; }
+    h1 { font-family: 'Pixelify Sans', sans-serif; font-weight: 600; }
+    fieldset { display: flex; gap: 20px; width: fit-content; border: 1px solid #988367; }
+    label, input { cursor: pointer; }
+    .tarot-preview-grid { --tarot-preview-width: 300px; display: grid; grid-template-columns: repeat(auto-fill, var(--tarot-preview-width)); gap: 24px; align-items: start; }
+    .tarot-preview-overflow { outline: 2px solid red; }
+    .tarot-preview-status { min-height: 1.5em; }
+  </style>
+</head>
+<body>
+  <h1>Mirrorwood · Season 1 tarot</h1>
+  <fieldset>
+    <legend>Card width</legend>
+    <label><input type="radio" name="size" value="180"> 180px</label>
+    <label><input type="radio" name="size" value="300" checked> 300px</label>
+    <label><input type="radio" name="size" value="480"> 480px</label>
+  </fieldset>
+  <p>Red outlines mark text that overflows its box at the selected size.</p>
+  <p class="tarot-preview-status" role="status">Loading cards…</p>
+  <main class="tarot-preview-grid" aria-label="Season 1 tarot cards"></main>
+  <script>
+    document.addEventListener('DOMContentLoaded', async function () {
+      const grid = document.querySelector('.tarot-preview-grid');
+      const status = document.querySelector('.tarot-preview-status');
+      let cards = [];
+      let pending;
+
+      function checkOverflow() {
+        const overflowing = [];
+        grid.querySelectorAll('.tarot-card').forEach(function (card, index) {
+          const box = card.querySelector('.tarot-text');
+          const bounds = box.getBoundingClientRect();
+          const range = document.createRange();
+          range.selectNodeContents(box.querySelector('.tarot-copy'));
+          const overflow = Array.from(range.getClientRects()).some(function (rect) {
+            return rect.top < bounds.top - 0.5 || rect.bottom > bounds.bottom + 0.5 ||
+              rect.left < bounds.left - 0.5 || rect.right > bounds.right + 0.5;
+          });
+          box.classList.toggle('tarot-preview-overflow', overflow);
+          if (overflow) overflowing.push(cards[index].name);
+        });
+        const size = document.querySelector('input[name="size"]:checked').value;
+        status.textContent = overflowing.length
+          ? 'Text overflow at ' + size + 'px: ' + overflowing.join(', ') + '.'
+          : 'No text overflow at ' + size + 'px.';
+      }
+
+      function scheduleCheck() {
+        cancelAnimationFrame(pending);
+        pending = requestAnimationFrame(checkOverflow);
+      }
+
+      document.querySelectorAll('input[name="size"]').forEach(function (input) {
+        input.addEventListener('change', function () {
+          grid.style.setProperty('--tarot-preview-width', input.value + 'px');
+          scheduleCheck();
+        });
+      });
+
+      try {
+        const data = await MirrorwoodTarot.loadCards();
+        cards = data.cards;
+        cards.forEach(function (card) { grid.append(MirrorwoodTarot.renderCard(card)); });
+        await document.fonts.ready;
+        const observer = new ResizeObserver(scheduleCheck);
+        grid.querySelectorAll('.tarot-card').forEach(function (card) { observer.observe(card); });
+        document.fonts.addEventListener('loadingdone', scheduleCheck);
+        scheduleCheck();
+      } catch (error) {
+        status.textContent = 'Could not load the preview: ' + error.message;
+      }
+    });
+  </script>
+</body>
+</html>
