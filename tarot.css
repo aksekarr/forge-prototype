@@ -67,3 +67,20 @@
 .tarot-text-paragraph { line-height: 1.36; }
 .tarot-text-verse { line-height: 1.55; }
 .tarot-line { display: block; }
+
+/* Closing line: IM Fell's regular letters, slanted by the browser, to match the approved mockups.
+   The true IM Fell italic is ~17% narrower and reads smaller than the surrounding text.
+   This family has no italic face, so font-style: italic is synthesised from the regular. */
+@font-face {
+  font-family: 'Tarot Fell Roman';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('assets/fonts/im-fell-english-latin-400-normal.woff2') format('woff2');
+}
+
+.tarot-copy em {
+  font-family: 'Tarot Fell Roman', 'IM Fell English', serif;
+  font-style: italic;
+  font-synthesis: style;
+}
