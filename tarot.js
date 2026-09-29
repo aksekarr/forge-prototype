@@ -3,8 +3,15 @@
 
   let frame = 'assets/tarot/card-frame.webp';
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const shinyPointers = new WeakMap();
 
   function restShiny(element) {
+    const pointer = shinyPointers.get(element);
+    if (pointer) {
+      cancelAnimationFrame(pointer.frame);
+      pointer.frame = null;
+      pointer.position = null;
+    }
     element.classList.remove('tarot-live');
     element.style.setProperty('--tarot-rx', '0deg');
     element.style.setProperty('--tarot-ry', '0deg');
@@ -29,16 +36,34 @@
       element.append(layer);
     });
 
-    function move(event) {
-      if (event.pointerType === 'touch' || reducedMotion.matches || element.classList.contains('tarot-burst')) return;
+    // The article stays flat and owns hit testing; only its inner face tilts.
+    const face = document.createElement('div');
+    face.className = 'tarot-shiny-face';
+    face.append(...element.childNodes);
+    element.append(face);
+    const pointer = { frame: null, position: null };
+    shinyPointers.set(element, pointer);
+
+    function tiltPaused() {
+      return reducedMotion.matches || element.classList.contains('tarot-tilt-paused') || element.classList.contains('tarot-burst');
+    }
+    function updateTilt() {
+      pointer.frame = null;
+      if (!pointer.position || !element.isConnected || tiltPaused()) return;
       const bounds = element.getBoundingClientRect();
-      const x = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
-      const y = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height));
+      if (!bounds.width || !bounds.height) return;
+      const x = Math.max(0, Math.min(1, (pointer.position.x - bounds.left) / bounds.width));
+      const y = Math.max(0, Math.min(1, (pointer.position.y - bounds.top) / bounds.height));
       element.classList.add('tarot-live');
       element.style.setProperty('--tarot-ry', ((x - .5) * 18).toFixed(2) + 'deg');
       element.style.setProperty('--tarot-rx', ((.5 - y) * 18).toFixed(2) + 'deg');
       ['hx', 'gx'].forEach(function (name) { element.style.setProperty('--tarot-' + name, (x * 100).toFixed(1) + '%'); });
       ['hy', 'gy'].forEach(function (name) { element.style.setProperty('--tarot-' + name, (y * 100).toFixed(1) + '%'); });
+    }
+    function move(event) {
+      if (event.pointerType === 'touch' || tiltPaused()) return;
+      pointer.position = { x: event.clientX, y: event.clientY };
+      if (pointer.frame === null) pointer.frame = requestAnimationFrame(updateTilt);
     }
     element.addEventListener('pointerenter', move);
     element.addEventListener('pointermove', move);
@@ -48,7 +73,7 @@
   }
 
   reducedMotion.addEventListener('change', function () {
-    document.querySelectorAll('.tarot-shiny.tarot-live').forEach(restShiny);
+    document.querySelectorAll('.tarot-shiny').forEach(restShiny);
   });
 
   async function loadCards() {
@@ -146,15 +171,83 @@
     if (document.fonts) await document.fonts.ready;
   }
 
-  function signalTarot() {
-    const trigger = document.getElementById('tarot-open');
-    if (!trigger) return;
-    trigger.classList.remove('tarot-arrived');
-    void trigger.offsetWidth;
-    trigger.classList.add('tarot-arrived');
-    trigger.addEventListener('animationend', function () {
-      trigger.classList.remove('tarot-arrived');
-    }, { once: true });
+  function createRevealCard(card) {
+    const flipper = document.createElement('div');
+    flipper.className = 'tarot-reveal-flipper';
+    const front = document.createElement('div');
+    front.className = 'tarot-reveal-front';
+    const element = renderCard(card);
+    if (card.numeral === null) element.classList.add('tarot-tilt-paused');
+    front.append(element);
+    const back = document.createElement('img');
+    back.className = 'tarot-reveal-back';
+    back.src = 'assets/tarot/card-back.webp';
+    back.alt = '';
+    back.setAttribute('aria-hidden', 'true');
+    flipper.append(front, back);
+    return { flipper: flipper, element: element };
+  }
+
+  async function flyCardToDrawer(dialog, flipper, element, card, data) {
+    const origin = flipper.getBoundingClientRect();
+    const flight = document.createElement('dialog');
+    flight.className = 'tarot-flight-layer';
+    flight.setAttribute('aria-label', 'Keeping ' + card.name);
+    const carrier = document.createElement('div');
+    carrier.className = 'tarot-flight-card';
+    Object.assign(carrier.style, {
+      left: origin.left + 'px', top: origin.top + 'px',
+      width: origin.width + 'px', height: origin.height + 'px'
+    });
+    carrier.append(element);
+    flight.append(carrier);
+    document.body.append(flight);
+    let destination;
+    let animation;
+    function finishMotion() {
+      if (reducedMotion.matches && animation) animation.finish();
+    }
+    // Escape during the short flight should finish landing, not dismiss the drawer.
+    flight.addEventListener('cancel', function (event) {
+      event.preventDefault();
+      if (animation) animation.finish();
+    });
+    try {
+      dialog.close();
+      const tray = await openTarotDrawer(data);
+      destination = Array.from(tray.grid.querySelectorAll('.tarot-slot-earned'))
+        .find(function (slot) { return slot.dataset.cardId === card.id; });
+      if (reducedMotion.matches) {
+        if (destination) destination.replaceChildren(element);
+        return;
+      }
+      if (destination) destination.classList.add('tarot-slot-arriving');
+      // Measure the final slot before the drawer's entrance starts on the next frame.
+      const target = destination && destination.getBoundingClientRect();
+      flight.showModal();
+      if (target && target.width && target.height) {
+        const x = target.left - origin.left;
+        const y = target.top - origin.top;
+        const scaleX = target.width / origin.width;
+        const scaleY = target.height / origin.height;
+        animation = carrier.animate([
+          { transform: 'translate(0, 0) scale(1)', offset: 0 },
+          { transform: `translate(${x}px, ${y - 3}px) scale(${scaleX * 1.025}, ${scaleY * 1.025})`, offset: .84 },
+          { transform: `translate(${x}px, ${y}px) scale(${scaleX}, ${scaleY})`, offset: 1 }
+        ], { duration: 800, easing: 'cubic-bezier(.22, .7, .25, 1)', fill: 'forwards' });
+      } else {
+        animation = carrier.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, easing: 'ease-out', fill: 'forwards' });
+      }
+      reducedMotion.addEventListener('change', finishMotion);
+      await animation.finished;
+      if (destination) destination.replaceChildren(element);
+    } finally {
+      reducedMotion.removeEventListener('change', finishMotion);
+      if (destination) destination.classList.remove('tarot-slot-arriving');
+      if (animation) animation.cancel();
+      if (flight.open) flight.close();
+      flight.remove();
+    }
   }
 
   async function showReveal(cardId) {
@@ -172,8 +265,8 @@
     dialog.setAttribute('closedby', 'closerequest');
     const stage = document.createElement('div');
     stage.className = 'tarot-reveal-stage';
-    const element = renderCard(card);
-    stage.append(element);
+    const { flipper, element } = createRevealCard(card);
+    stage.append(flipper);
     const keep = document.createElement('button');
     keep.type = 'button';
     keep.className = 'tarot-keep';
@@ -183,67 +276,95 @@
     document.body.append(dialog);
 
     try {
-      await readyCard(element);
+      await readyCard(stage);
     } catch (error) {
       dialog.remove();
       throw error;
     }
 
     return new Promise(function (resolve, reject) {
-      const previousFocus = document.activeElement;
       let animationFrame;
-      let settleTimer;
-      function settle() {
-        element.classList.remove('tarot-burst', 'tarot-turn');
-        dialog.classList.remove('tarot-reveal-entering');
-        if (shiny) element.classList.add('tarot-rest-subtle');
-      }
-      function motionChanged() {
-        if (reducedMotion.matches) {
-          clearTimeout(settleTimer);
-          settle();
+      let entranceAnimation;
+      let effectTimer;
+      let keeping = false;
+      function restFace() {
+        element.classList.remove('tarot-burst', 'tarot-standard-sweep', 'tarot-tilt-paused');
+        if (shiny) {
+          restShiny(element);
+          element.classList.add('tarot-rest-subtle');
         }
       }
-      keep.addEventListener('click', function () { dialog.close(); });
-      dialog.addEventListener('cancel', function (event) {
-        event.preventDefault();
-        dialog.close();
-      });
-      dialog.addEventListener('close', function () {
+      function settleEntrance() {
         cancelAnimationFrame(animationFrame);
-        clearTimeout(settleTimer);
+        clearTimeout(effectTimer);
+        flipper.classList.add('tarot-reveal-face-up');
+        if (entranceAnimation) entranceAnimation.cancel();
+        entranceAnimation = null;
+        restFace();
+        keep.disabled = keeping;
+      }
+      function motionChanged() {
+        if (reducedMotion.matches) settleEntrance();
+      }
+      function cleanup() {
+        settleEntrance();
         reducedMotion.removeEventListener('change', motionChanged);
+        if (dialog.open) dialog.close();
         dialog.remove();
         document.documentElement.classList.remove('tarot-reveal-open');
-        if (previousFocus && previousFocus.isConnected) previousFocus.focus({ preventScroll: true });
-        signalTarot();
-        resolve();
-      }, { once: true });
+      }
+      async function keepCard() {
+        if (keeping) return;
+        keeping = true;
+        settleEntrance();
+        try {
+          await flyCardToDrawer(dialog, flipper, element, card, data);
+          cleanup();
+          resolve();
+        } catch (error) {
+          cleanup();
+          reject(error);
+        }
+      }
+      async function enterCard() {
+        if (!dialog.open || keeping) return;
+        if (reducedMotion.matches) { settleEntrance(); return; }
+        entranceAnimation = flipper.animate([
+          { transform: 'rotateY(180deg)' }, { transform: 'rotateY(0deg)' }
+        ], { delay: 1000, duration: 1200, easing: 'cubic-bezier(.45, 0, .2, 1)', fill: 'both' });
+        try { await entranceAnimation.finished; }
+        catch (error) { return; } // Keep/Escape or Reduce Motion can finish the ceremony early.
+        flipper.classList.add('tarot-reveal-face-up');
+        entranceAnimation.cancel();
+        entranceAnimation = null;
+        if (keeping) return;
+        keep.disabled = false;
+        if (shiny) element.classList.remove('tarot-rest-subtle');
+        element.classList.add(shiny ? 'tarot-burst' : 'tarot-standard-sweep');
+        effectTimer = setTimeout(restFace, shiny ? 2800 : 1000);
+      }
+      keep.addEventListener('click', keepCard);
+      dialog.addEventListener('cancel', function (event) {
+        event.preventDefault();
+        keepCard();
+      });
       reducedMotion.addEventListener('change', motionChanged);
       document.documentElement.classList.add('tarot-reveal-open');
       try {
         dialog.showModal();
       } catch (error) {
-        reducedMotion.removeEventListener('change', motionChanged);
-        document.documentElement.classList.remove('tarot-reveal-open');
-        dialog.remove();
+        cleanup();
         reject(error);
         return;
       }
-      // Safari's native focus is settled before the entrance starts.
-      animationFrame = requestAnimationFrame(function () {
-        if (!dialog.open) return;
-        dialog.classList.add('tarot-reveal-entering');
-        if (shiny) element.classList.remove('tarot-rest-subtle');
-        element.classList.add(shiny ? 'tarot-burst' : 'tarot-turn');
-        settleTimer = setTimeout(settle, reducedMotion.matches ? 250 : shiny ? 2800 : 900);
-      });
+      // Safari's native focus is settled before the hold and flip start.
+      animationFrame = requestAnimationFrame(enterCard);
     });
   }
 
   let revealQueue = Promise.resolve();
 
-  // Presentation only: resolves on Keep/Escape; rejects unknown IDs/load failures.
+  // Presentation only: Keep/Escape opens the drawer; resolves after landing.
   // Concurrent calls are shown in order, without changing earned progress or storage.
   function revealCard(cardId) {
     const reveal = revealQueue.then(function () { return showReveal(cardId); });
@@ -252,6 +373,7 @@
   }
 
   let drawerCards = [];
+  let openTarotDrawer;
   let earnedSource = function () { return []; };
 
   function setEarnedSource(source) {
@@ -297,19 +419,21 @@
       if (selectedSlot) selectedSlot.focus({ preventScroll: true });
     });
     let loading;
-    trigger.addEventListener('click', async function () {
+    openTarotDrawer = async function (suppliedData) {
       trigger.disabled = true;
       status.hidden = false;
       status.textContent = 'Loading cards…';
       try {
+        if (suppliedData) loading = Promise.resolve(suppliedData);
         if (!loading) loading = loadCards().catch(function (error) { loading = null; throw error; });
-        const data = await loading;
+        const data = suppliedData || await loading;
         drawerCards = data.cards;
         const earned = new Set(earnedTarotIds());
         grid.replaceChildren();
         drawerCards.forEach(function (card) {
           const slot = document.createElement(earned.has(card.id) ? 'button' : 'div');
           slot.className = 'tarot-slot';
+          slot.dataset.cardId = card.id;
           if (earned.has(card.id)) {
             slot.type = 'button';
             slot.classList.add('tarot-slot-earned');
@@ -334,7 +458,9 @@
       }
       trigger.disabled = false;
       window.MirrorwoodDrawers.open('Tarot', [status, grid], false, trigger);
-    });
+      return { grid: grid };
+    };
+    trigger.addEventListener('click', function () { openTarotDrawer(); });
   }
 
   function setup() {
