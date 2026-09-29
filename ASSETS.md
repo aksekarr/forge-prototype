@@ -32,13 +32,13 @@ Earlier assets (creature stages and idle frames, scenes, sword, ghost, scene fra
 
 ## Fonts
 - Asset: IM Fell English (card text, Oath), Pixelify Sans (UI, card name bar)
-- Source: Google Fonts — loaded from fonts.googleapis.com in `index.html` and `tarot-preview.html` (not yet self-hosted)
-- Licence: SIL Open Font License; attribution: none required
+- Source: Self-hosted from Fontsource — [IM Fell English 5.3.0](https://www.npmjs.com/package/@fontsource/im-fell-english/v/5.3.0), regular and italic 400 latin; [Pixelify Sans 5.2.6](https://www.npmjs.com/package/@fontsource/pixelify-sans/v/5.2.6), normal 400, 500 and 600 latin. WOFF2 files in `assets/fonts/`; shared IM Fell regular file reused for the closing line.
+- Licence: SIL Open Font License 1.1 — copies in `assets/fonts/OFL-IM-Fell-English.txt` and `assets/fonts/OFL-Pixelify-Sans.txt`; attribution: none required
 - Used in: whole site
 
 ## Fonts — tarot closing line (self-hosted)
 - Asset: IM Fell English Regular (latin, 400), used as the tarot card's closing line with a browser-synthesised slant (matches the approved mockups; the true italic reads narrower and smaller)
-- Source: Fontsource `@fontsource/im-fell-english` 5.3.0 — `files/im-fell-english-latin-400-normal.woff2`
+- Source: Self-hosted from Fontsource `@fontsource/im-fell-english` 5.3.0 — `files/im-fell-english-latin-400-normal.woff2`
 - Licence: SIL Open Font License 1.1 — copy in `assets/fonts/OFL-IM-Fell-English.txt`; attribution: none required
 - File: `assets/fonts/im-fell-english-latin-400-normal.woff2`
 - Used in: `tarot.css` (`.tarot-copy em`, font family 'Tarot Fell Roman')

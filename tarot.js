@@ -88,115 +88,29 @@
     const trigger = document.getElementById('tarot-open');
     if (!trigger) return;
 
-    const drawer = document.createElement('dialog');
-    drawer.id = 'tarot-drawer';
-    drawer.className = 'tarot-drawer';
-    drawer.setAttribute('aria-labelledby', 'tarot-drawer-title');
-    const header = document.createElement('div');
-    header.className = 'tarot-drawer-header';
-    const title = document.createElement('h2');
-    title.id = 'tarot-drawer-title';
-    title.className = 'tarot-drawer-title';
-    title.textContent = 'Tarot';
-    const close = document.createElement('button');
-    close.type = 'button';
-    close.className = 'tarot-close';
-    close.textContent = 'Close';
-    close.setAttribute('aria-label', 'Close tarot drawer');
-    header.append(title, close);
     const status = document.createElement('p');
     status.className = 'tarot-drawer-status';
     status.setAttribute('role', 'status');
     const grid = document.createElement('div');
     grid.className = 'tarot-slots';
-    const interior = document.createElement('div');
-    interior.className = 'tarot-drawer-interior';
-    ['left', 'right'].forEach(function (side) {
-      const panel = document.createElement('div');
-      panel.className = 'tarot-side-panel tarot-side-panel-' + side;
-      panel.setAttribute('aria-hidden', 'true');
-      panel.textContent = '✦';
-      interior.append(panel);
-    });
-    const content = document.createElement('div');
-    content.className = 'tarot-drawer-content';
-    interior.append(content);
-    drawer.append(header, interior);
-
     const viewer = document.createElement('dialog');
     viewer.className = 'tarot-viewer';
     const viewerClose = document.createElement('button');
     viewerClose.type = 'button';
-    viewerClose.className = 'tarot-close';
+    viewerClose.className = 'drawer-close';
     viewerClose.textContent = 'Close card';
     const largeCard = document.createElement('div');
     largeCard.className = 'tarot-large-card';
     viewer.append(viewerClose, largeCard);
-    document.body.append(drawer, viewer);
+    document.body.append(viewer);
 
-    // A dialog backdrop targets the dialog itself; padding is still inside the tray.
-    [drawer, viewer].forEach(function (dialog) {
-      let startedOutside = false;
-      function outside(event) {
-        const bounds = dialog.getBoundingClientRect();
-        return event.target === dialog && (event.clientX < bounds.left ||
-          event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom);
-      }
-      dialog.addEventListener('pointerdown', function (event) { startedOutside = outside(event); });
-      dialog.addEventListener('click', function (event) {
-        if (startedOutside && outside(event)) dialog.close();
-        startedOutside = false;
-      });
-    });
-    close.addEventListener('click', function () { drawer.close(); });
+    window.MirrorwoodDrawers.dismissOnBackdrop(viewer);
     viewerClose.addEventListener('click', function () { viewer.close(); });
     let selectedSlot;
-    let opener = trigger;
     viewer.addEventListener('close', function () {
       largeCard.replaceChildren();
       if (selectedSlot) selectedSlot.focus({ preventScroll: true });
     });
-    drawer.addEventListener('close', function () {
-      drawer.classList.remove('tarot-drawer-enter');
-      document.documentElement.classList.remove('tarot-drawer-open');
-      opener.focus({ preventScroll: true });
-    });
-
-    // Every drawer uses this same dialog, frame, header and dismissal handlers.
-    function openDrawer(label, nodes, reading, button) {
-      opener = button;
-      title.textContent = label;
-      close.setAttribute('aria-label', 'Close ' + label + ' drawer');
-      drawer.classList.toggle('tarot-drawer-reading', reading);
-      content.replaceChildren(...nodes);
-      content.scrollTop = 0;
-      document.documentElement.classList.add('tarot-drawer-open');
-      drawer.showModal();
-      // Start motion after native dialog focus has settled, avoiding Safari scroll jumps.
-      requestAnimationFrame(function () {
-        if (drawer.open) drawer.classList.add('tarot-drawer-enter');
-      });
-    }
-
-    // Move the existing prose, keeping the demo's source and reveal untouched.
-    if (new URLSearchParams(location.search).get('demo') !== '1') {
-      const oathSource = document.querySelector('#shared-oath');
-      const oathNodes = Array.from(oathSource.querySelector('.oath-panel').children)
-        .filter(function (node) { return node.tagName !== 'H2'; });
-      const about = document.querySelector('[aria-labelledby="about-title"]');
-      const ghostNodes = Array.from(about.querySelector('article').querySelectorAll('p'));
-      oathNodes.concat(ghostNodes).forEach(function (node) { node.remove(); });
-      oathSource.remove();
-      about.remove();
-      window.MirrorwoodTarot.openOath = function () {
-        openDrawer('The Oath', oathNodes, true, document.getElementById('read-oath'));
-      };
-      const ghostTrigger = document.getElementById('ghost-open');
-      ghostTrigger.addEventListener('click', function () {
-        openDrawer('The Ghost', ghostNodes, true, ghostTrigger);
-      });
-    }
-
     let loading;
     trigger.addEventListener('click', async function () {
       trigger.disabled = true;
@@ -234,11 +148,12 @@
         status.textContent = 'Cards could not be loaded. Close and reopen Tarot to retry.';
       }
       trigger.disabled = false;
-      openDrawer('Tarot', [status, grid], false, trigger);
+      window.MirrorwoodDrawers.open('Tarot', [status, grid], false, trigger);
     });
   }
 
-  window.MirrorwoodTarot = { loadCards: loadCards, renderCard: renderCard, earnedTarotIds: earnedTarotIds };
+  window.MirrorwoodTarot = { loadCards: loadCards, renderCard: renderCard, earnedTarotIds: earnedTarotIds,
+    openOath: function () { return window.MirrorwoodDrawers.openOath(); } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupDrawer);
   else setupDrawer();
 }());

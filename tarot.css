@@ -85,61 +85,9 @@
   font-synthesis: style;
 }
 
-.tarot-open,
-.tarot-close {
-  border: 2px solid #603014;
-  background: #c96b28;
-  color: #fff4cf;
-  box-shadow: 2px 2px 0 #3a1d0d;
-  cursor: pointer;
-  font-family: 'Pixelify Sans', system-ui, sans-serif;
-  padding: 8px 10px;
-}
-
-.tarot-open { display: block; width: 100%; margin: 0; }
-.tarot-drawer-open { overflow: hidden; }
-
-.tarot-drawer,
 .tarot-viewer { box-sizing: border-box; color: #2b160e; }
-.tarot-drawer::backdrop,
 .tarot-viewer::backdrop { background: rgb(20 12 8 / 65%); }
 
-.tarot-drawer {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  max-width: none;
-  max-height: 80dvh;
-  margin: auto 0 0;
-  height: fit-content;
-  padding: 0;
-  border: 14px solid #3a1d0d;
-  border-image: url('assets/bg-wood.png') 28 round;
-  background: linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)), url('assets/bg-wood.png') center / cover;
-  box-shadow: inset 0 0 0 3px #b8801f, inset 0 12px 18px rgba(0,0,0,.8), 0 -10px 24px rgba(0,0,0,.7);
-  overflow: auto;
-  overscroll-behavior: contain;
-}
-
-.tarot-drawer-enter { animation: tarot-slide-up 220ms ease-out; }
-/* Override the app's body-child positioning so the tray stays viewport-bound. */
-body > .tarot-drawer { position: fixed; }
-.tarot-drawer-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0; padding: 12px 20px 0; }
-.tarot-drawer-title { margin: 0; font: 600 24px 'Pixelify Sans', sans-serif; text-transform: uppercase; color: #f3d48a; text-shadow: 2px 2px 0 #1c0905; }
-.tarot-drawer-header > .tarot-close { background: #c96b28; border-color: #603014; color: #fff4cf; box-shadow: 2px 2px 0 #1c0905; }
-.tarot-drawer-interior { position: relative; isolation: isolate; padding: 28px 64px; }
-.tarot-drawer-interior::before {
-  content: '';
-  position: absolute;
-  inset: 14px 50px;
-  z-index: -1;
-  pointer-events: none;
-  background: radial-gradient(ellipse at 50% 30%, #6a1a22, #34090f 75%);
-  box-shadow: inset 0 10px 24px rgba(0,0,0,.7), inset 0 0 0 2px rgba(184,128,31,.6);
-}
-.tarot-side-panel { position: absolute; top: 14px; bottom: 14px; width: 36px; display: grid; place-items: center; color: #d9a441; font-size: 24px; pointer-events: none; }
-.tarot-side-panel-left { left: 14px; border-right: 2px solid #b8801f; background: repeating-linear-gradient(0deg, #3a1d0d 0 18px, #4a2812 18px 20px); }
-.tarot-side-panel-right { right: 14px; border-left: 2px solid #b8801f; background: repeating-linear-gradient(0deg, #3a1d0d 0 18px, #4a2812 18px 20px); }
 .tarot-drawer-status { text-align: center; color: #f3d48a; }
 /* Two 2:3 rows use three times the card width in height. Reserve 148px
    for the frame, header, interior padding and the largest row gap. */
@@ -147,9 +95,7 @@ body > .tarot-drawer { position: fixed; }
 .tarot-slot { box-sizing: border-box; display: block; width: 100%; min-width: 0; aspect-ratio: 2 / 3; margin: 0; padding: 0; }
 .tarot-slot-earned { border: 0; background: transparent; color: inherit; cursor: pointer; text-align: inherit; filter: drop-shadow(0 6px 6px rgba(0,0,0,.7)); }
 .tarot-slot-empty { display: grid; place-items: center; border: 2px dashed rgba(217,164,65,.45); border-radius: 4px; box-shadow: inset 0 4px 10px rgba(0,0,0,.5); color: rgba(243,212,138,.55); font: 500 clamp(12px, 2.5vw, 28px) 'Pixelify Sans', sans-serif; }
-.tarot-slot-earned:focus-visible,
-.tarot-open:focus-visible,
-.tarot-close:focus-visible { outline: 3px solid #7b240d; outline-offset: 3px; }
+.tarot-slot-earned:focus-visible { outline: 3px solid #7b240d; outline-offset: 3px; }
 
 .tarot-viewer {
   position: fixed;
@@ -163,20 +109,5 @@ body > .tarot-drawer { position: fixed; }
   background: transparent;
   overflow: visible;
 }
-.tarot-viewer > .tarot-close { display: block; margin: 0 0 10px auto; }
+.tarot-viewer > .drawer-close { display: block; margin: 0 0 10px auto; }
 .tarot-large-card { width: 100%; }
-
-@keyframes tarot-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
-@media (prefers-reduced-motion: reduce) { .tarot-drawer-enter { animation: none; } }
-
-/* Reading content shares the frame, but scrolls within a parchment lining. */
-.tarot-drawer-reading[open] { display: flex; flex-direction: column; height: 80dvh; overflow: hidden; }
-.tarot-drawer-reading .tarot-drawer-interior { display: flex; flex: 1; min-height: 0; }
-.tarot-drawer-reading .tarot-drawer-interior::before { background: #f3e4c8; }
-.tarot-drawer-reading .tarot-drawer-content {
-  width: 100%; max-width: 68ch; margin: 0 auto; padding: 8px 12px;
-  overflow-y: auto; overscroll-behavior: contain;
-  font: 400 clamp(18px, 1.7vw, 23px) / 1.5 'IM Fell English', serif;
-}
-.tarot-drawer-reading p { margin: 0 0 1em; }
-.tarot-drawer-reading .oath-verse { font-size: inherit; line-height: 1.4; }

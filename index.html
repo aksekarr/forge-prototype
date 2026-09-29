@@ -4,10 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mirrorwood — Seven Days</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Pixelify+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="fonts.css">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="drawers.css">
   <link rel="stylesheet" href="tarot.css">
 </head>
 <body>
@@ -74,10 +73,10 @@
         <button id="read-oath" class="secondary-action" type="button" aria-controls="tarot-drawer" aria-haspopup="dialog">Read the Oath</button>
       </section>
       <section class="panel" aria-label="The Ghost">
-        <button id="ghost-open" class="tarot-open" type="button" aria-controls="tarot-drawer" aria-haspopup="dialog">The Ghost</button>
+        <button id="ghost-open" class="drawer-trigger" type="button" aria-controls="tarot-drawer" aria-haspopup="dialog">The Ghost</button>
       </section>
       <section class="panel" aria-label="Tarot">
-        <button id="tarot-open" class="tarot-open" type="button" aria-controls="tarot-drawer" aria-haspopup="dialog">Tarot</button>
+        <button id="tarot-open" class="drawer-trigger" type="button" aria-controls="tarot-drawer" aria-haspopup="dialog">Tarot</button>
       </section>
     </div>
     </div>
@@ -139,6 +138,7 @@
       <button id="closing-message-close" type="button">Rest</button>
     </section>
   </dialog>
+  <script src="drawers.js"></script>
   <script src="tarot.js"></script>
   <script src="app.js"></script>
 </body>
