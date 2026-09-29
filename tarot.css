@@ -109,5 +109,5 @@
   background: transparent;
   overflow: visible;
 }
-.tarot-viewer > .drawer-close { display: block; margin: 0 0 10px auto; }
+.tarot-viewer > .drawer-close { margin: 0 0 10px auto; }
 .tarot-large-card { width: 100%; }

@@ -10,6 +10,17 @@
 }
 
 .drawer-trigger { display: block; width: 100%; margin: 0; }
+.drawer-close {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+}
 .drawer-open { overflow: hidden; }
 
 .drawer-shell { box-sizing: border-box; color: #2b160e; }
@@ -37,16 +48,28 @@
 body > .drawer-shell { position: fixed; }
 .drawer-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0; padding: 12px 20px 0; }
 .drawer-title { margin: 0; font: 600 24px 'Pixelify Sans', sans-serif; text-transform: uppercase; color: #f3d48a; text-shadow: 2px 2px 0 #1c0905; }
-.drawer-header > .drawer-close { background: #c96b28; border-color: #603014; color: #fff4cf; box-shadow: 2px 2px 0 #1c0905; }
+.drawer-header > .drawer-close { margin-bottom: 6px; background: #c96b28; border-color: #603014; color: #fff4cf; box-shadow: 2px 2px 0 #1c0905; }
 .drawer-interior { position: relative; isolation: isolate; padding: 28px 64px; }
 .drawer-interior::before {
   content: '';
   position: absolute;
-  inset: 14px 50px;
+  inset: 16px 50px;
   z-index: -1;
   pointer-events: none;
   background: radial-gradient(ellipse at 50% 30%, #6a1a22, #34090f 75%);
-  box-shadow: inset 0 10px 24px rgba(0,0,0,.7), inset 0 0 0 2px rgba(184,128,31,.6);
+  outline: 2px solid #b8801f;
+  box-shadow: inset 0 0 24px rgba(0,0,0,.7);
+}
+/* Thin end rails fit inside the existing padding without moving content. */
+.drawer-interior::after {
+  content: '';
+  position: absolute;
+  inset: 0 14px;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, #3a1d0d 0 18px, #4a2812 18px 20px) top / 100% 16px no-repeat,
+    repeating-linear-gradient(90deg, #3a1d0d 0 18px, #4a2812 18px 20px) bottom / 100% 16px no-repeat;
 }
 .drawer-side-panel { position: absolute; top: 14px; bottom: 14px; width: 36px; display: grid; place-items: center; color: #d9a441; font-size: 24px; pointer-events: none; }
 .drawer-side-panel-left { left: 14px; border-right: 2px solid #b8801f; background: repeating-linear-gradient(0deg, #3a1d0d 0 18px, #4a2812 18px 20px); }

@@ -98,7 +98,8 @@
     const viewerClose = document.createElement('button');
     viewerClose.type = 'button';
     viewerClose.className = 'drawer-close';
-    viewerClose.textContent = 'Close card';
+    viewerClose.textContent = '✕';
+    viewerClose.setAttribute('aria-label', 'Close card');
     const largeCard = document.createElement('div');
     largeCard.className = 'tarot-large-card';
     viewer.append(viewerClose, largeCard);

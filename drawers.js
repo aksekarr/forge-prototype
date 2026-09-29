@@ -33,8 +33,8 @@
     const close = document.createElement('button');
     close.type = 'button';
     close.className = 'drawer-close';
-    close.textContent = 'Close';
-    close.setAttribute('aria-label', 'Close tarot drawer');
+    close.textContent = '✕';
+    close.setAttribute('aria-label', 'Close drawer');
     header.append(title, close);
     const interior = document.createElement('div');
     interior.className = 'drawer-interior';
@@ -64,7 +64,6 @@
     function openDrawer(label, nodes, reading, button) {
       opener = button;
       title.textContent = label;
-      close.setAttribute('aria-label', 'Close ' + label + ' drawer');
       drawer.classList.toggle('drawer-reading', reading);
       content.replaceChildren(...nodes);
       content.scrollTop = 0;
