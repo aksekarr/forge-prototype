@@ -1,0 +1,19 @@
+.fortnight-record-tally:empty { display: none; }
+.fortnight-record-tally { display: grid; gap: 4px; margin-bottom: 12px; }
+.fortnight-record-tally button {
+  justify-self: start;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: #633014;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+}
+.fortnight-record-tally button:hover { text-decoration: underline; }
+.fortnight-record-tally button:focus-visible { outline: 2px solid #7b240d; outline-offset: 3px; }
+.fortnight-record-history { line-height: normal; }
+.fortnight-record-history section + section { margin-top: 28px; }
+.fortnight-record-history h3 { margin: 0 0 12px; font-size: 20px; color: #633014; }

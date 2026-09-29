@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="scene-fade.css">
   <link rel="stylesheet" href="drawers.css">
   <link rel="stylesheet" href="tarot.css">
+  <link rel="stylesheet" href="record.css">
 </head>
 <body>
   <img class="wood-backdrop" src="assets/bg-wood.png" alt="" aria-hidden="true">
@@ -41,11 +42,13 @@
       <img class="scene-frame" src="assets/frame.png" alt="" aria-hidden="true">
       </div>
     </section>
-    <section id="demo-panel" class="panel demo-panel" hidden aria-labelledby="demo-title">
+    <div id="demo-panel" class="demo-panel drawer-stack" hidden>
+    <section class="panel" aria-labelledby="demo-title">
       <h2 id="demo-title">Try it</h2>
-      <p>This demo starts part-way through a week. Tick the last deed to forge the sword, defeat the ghost and watch your creature evolve. Then press Next day and keep going. Keep all seven days and something is waiting at the end.</p>
-      <div class="demo-actions"><button id="next-demo-day" type="button">Next day</button><button id="reset-demo" type="button">Reset demo</button><button id="start-demo-egg" class="secondary-action" type="button">Start from the egg</button><button id="read-demo-oath" class="secondary-action" type="button">Read the Oath</button></div>
+      <p>Three days, one deed left on each. Tick it, watch what the day brings, then press Next day.</p>
+      <div class="demo-actions"><button id="next-demo-day" type="button">Next day</button><button id="reset-demo" type="button">Reset demo</button><button id="read-demo-oath" class="secondary-action" type="button">Read the Oath</button></div>
     </section>
+    </div>
     <section class="side-column" aria-label="Daily tasks and seven-day record">
       <section class="panel tasks-panel" aria-labelledby="tasks-title">
         <h2 id="tasks-title">Today <span id="demo-badge" class="demo-badge" hidden>DEMO</span><span class="task-date">· Day <span id="day-number"></span> · <span id="date-label"></span></span></h2>
@@ -123,8 +126,8 @@
   <dialog id="demo-welcome" class="profile-welcome" aria-labelledby="demo-welcome-title">
     <section class="panel profile-welcome-card">
       <h2 id="demo-welcome-title">Welcome, stranger,</h2>
-      <p>This is Mirrorwood. It asks nothing of your time. Each day, a few deeds are done out there, in real life, and this world only reflects them: the sword forges, the ghost falls, the creature grows.</p>
-      <p>This creature is four days into its week. One deed remains today.</p>
+      <p>This is Mirrorwood. It asks nothing of your time. Each day, a few deeds are done out there, in real life, and this world only reflects them.</p>
+      <p>Here are three days. On each, one deed remains.</p>
       <p>Nothing here will lecture you. It only witnesses.</p>
       <button id="demo-welcome-close" type="button">Enter</button>
     </section>
@@ -143,6 +146,7 @@
   <script src="tarot.js"></script>
   <script src="fortnight-rules.js"></script>
   <script src="fortnight-profile.js"></script>
+  <script src="demo.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -1,10 +1,10 @@
-// Fortnight-only profile integration. App state and animation helpers live in app.js.
+// Fortnight integration for personal links and the guided demo.
 function newProfileRules() {
   return params.get('rules') === 'fortnight' ? { rules: 'fortnight' } : {};
 }
 
 function isFortnightProfile() {
-  return isProfileMode && state.rules === 'fortnight';
+  return (isProfileMode || isDemoMode) && state.rules === 'fortnight';
 }
 
 function fortnightCompletedDates() {
@@ -26,12 +26,71 @@ function fortnightEarnedCardIds() {
   return isFortnightProfile() ? Object.values(state.tarot?.awards || {}) : [];
 }
 
+function fortnightRecordWeek(week) {
+  return Array.from({ length: 7 }, (_, index) => {
+    const offset = (week - 1) * 7 + index;
+    const date = recordDate(offset);
+    const tasks = date > today ? {} : state.days[date]?.tasks || {};
+    return { day: offset + 1, date, count: completedCount(tasks), kept: isComplete(tasks) };
+  });
+}
+
+function fortnightRecordCells(days) {
+  return days.map(day => `<div class="record-cell ${day.date === today ? 'current' : ''}"><span class="record-day">Day ${day.day}</span><span class="record-value">${day.count} / ${currentTasks().length}</span></div>`).join('');
+}
+
+function openFortnightRecord(button) {
+  const history = document.createElement('div');
+  history.className = 'fortnight-record-history';
+  [1, 2].forEach(week => {
+    const section = document.createElement('section');
+    const heading = document.createElement('h3');
+    heading.id = `record-week-${week}`;
+    heading.textContent = `Week ${week}`;
+    section.setAttribute('aria-labelledby', heading.id);
+    const cells = document.createElement('div');
+    cells.className = 'record';
+    cells.innerHTML = fortnightRecordCells(fortnightRecordWeek(week));
+    section.append(heading, cells);
+    history.append(section);
+  });
+  MirrorwoodDrawers.open('Record', [history], true, button);
+}
+
+function renderFortnightRecord() {
+  const record = document.querySelector('#record');
+  const currentWeek = dayOffset(today) < 7 ? 1 : 2;
+  record.setAttribute('aria-label', `Week ${currentWeek} record`);
+  record.closest('.side-column').setAttribute('aria-label', 'Daily tasks and fortnight record');
+  record.innerHTML = fortnightRecordCells(fortnightRecordWeek(currentWeek));
+
+  let tally = document.querySelector('#fortnight-record-tally');
+  if (!tally) {
+    tally = document.createElement('div');
+    tally.id = 'fortnight-record-tally';
+    tally.className = 'fortnight-record-tally';
+    record.before(tally);
+  }
+  tally.replaceChildren();
+  [1, 2].forEach(week => {
+    const days = fortnightRecordWeek(week);
+    if (days[6].date >= today) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = `Week ${week} · ${days.filter(day => day.kept).length} of 7 kept`;
+    button.setAttribute('aria-controls', 'tarot-drawer');
+    button.setAttribute('aria-haspopup', 'dialog');
+    button.addEventListener('click', () => openFortnightRecord(button));
+    tally.append(button);
+  });
+}
+
 async function awardFortnightCard(date, currentStage) {
   if (Object.prototype.hasOwnProperty.call(state.tarot?.awards || {}, date)) return;
   const data = await MirrorwoodTarot.loadCards();
   // Recheck after loading before making the date's permanent award.
   if (Object.prototype.hasOwnProperty.call(state.tarot?.awards || {}, date)) return;
-  const cardId = MirrorwoodRules.drawCard(data.cards, fortnightEarnedCardIds(), currentStage, Math.random);
+  const cardId = isDemoMode ? 'mirror' : MirrorwoodRules.drawCard(data.cards, fortnightEarnedCardIds(), currentStage, Math.random);
   if (cardId === null) return;
   if (!state.tarot) state.tarot = {};
   if (!state.tarot.awards) state.tarot.awards = {};

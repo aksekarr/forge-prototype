@@ -41,12 +41,10 @@ Object.entries(FRAME_OPENING_INSETS).forEach(([edge, value]) => {
 document.documentElement.style.setProperty('--demo-oath-fade-duration', `${DEMO_OATH_FADE_DURATION}ms`);
 
 const TASKS = ['Warm-ups', 'Hey Joe practice', 'Logic session', 'Read'];
-const DEMO_TASKS = ['Work out', 'Read 10 pages', 'Practise your craft'];
 const STORAGE_KEY = 'seven-days-prototype';
 const CREATURE_SCALE = 0.46;
 const SWORD_REVEALS = [0, 22, 40, 70, 100];
 const DEMO_SWORD_REVEALS = [0, 40, 70, 100];
-const DEMO_STATE_VERSION = 2;
 const STAGE_ONE_IDLE_SEQUENCE = Object.freeze([
   [1, 500], [2, 450], [1, 350], [4, 450], [1, 500],
   [2, 450], [3, 140], [1, 350], [4, 450],
@@ -103,7 +101,7 @@ if (!isDemoMode) {
   document.querySelector('#demo-badge').remove();
   document.querySelector('#demo-oath').remove();
 } else {
-  document.querySelector('#oath-card').remove();
+  prepareDemoPanels();
 }
 if (params.get('reset') === '1' && !isLayoutMode) {
   localStorage.removeItem(ACTIVE_STORAGE_KEY);
@@ -135,30 +133,6 @@ function profileSetup() {
   if (![3, 4].includes(tasks.length) || tasks.some(task => task.length < 1 || task.length > 40) || name.length < 1 || name.length > 30) return null;
   const requestedStart = validStartDate(params.get('start'));
   return { firstDay: requestedStart && requestedStart >= realToday ? requestedStart : realToday, days: {}, tasks, name, ...newProfileRules() };
-}
-
-function demoTasks(count) {
-  const completedAt = new Date().toISOString();
-  return Object.fromEntries(DEMO_TASKS.slice(0, count).map(task => [task, completedAt]));
-}
-
-function demoStateBase(firstDay, simulatedDate) {
-  return { firstDay, simulatedDate, days: {}, demoStateVersion: DEMO_STATE_VERSION, demoTaskStructure: [...DEMO_TASKS] };
-}
-
-function seededDemoState(demoWelcomeSeen = false) {
-  const simulatedDate = localDateString();
-  const firstDay = addLocalDays(simulatedDate, -4);
-  const demoState = demoStateBase(firstDay, simulatedDate);
-  for (let index = 0; index < 4; index += 1) demoState.days[addLocalDays(firstDay, index)] = { tasks: demoTasks(DEMO_TASKS.length) };
-  demoState.days[simulatedDate] = { tasks: demoTasks(2) };
-  if (demoWelcomeSeen) demoState.demoWelcomeSeen = true;
-  return demoState;
-}
-
-function eggDemoState() {
-  const firstDay = localDateString();
-  return { ...demoStateBase(firstDay, firstDay), demoWelcomeSeen: true };
 }
 
 function loadState() {
@@ -787,13 +761,13 @@ function render() {
     row.append(label, button);
     taskList.append(row);
   });
-  document.querySelector('#record').innerHTML = Array.from({ length: 7 }, (_, index) => {
+  if (isFortnightProfile()) renderFortnightRecord();
+  else document.querySelector('#record').innerHTML = Array.from({ length: 7 }, (_, index) => {
     const date = recordDate(index);
     const count = completedCount(state.days[date]?.tasks || {});
     return `<div class="record-cell ${date === today ? 'current' : ''}"><span class="record-day">Day ${index + 1}</span><span class="record-value">${count} / ${currentTasks().length}</span></div>`;
   }).join('');
-  const nextDayButton = document.querySelector('#next-demo-day');
-  if (isDemoMode && nextDayButton) nextDayButton.disabled = Boolean(activeSequence);
+  if (isDemoMode) renderDemoControls();
 }
 
 document.querySelector('#task-list').addEventListener('click', async event => {
@@ -1237,58 +1211,6 @@ function setupClosingMessage() {
   const welcome = document.querySelector(isDemoMode ? '#demo-welcome' : '#profile-welcome');
   if (welcome.open) welcome.addEventListener('close', () => openClosingMessage(), { once: true });
   else openClosingMessage();
-}
-
-function setupDemoWelcome() {
-  if (!isDemoMode || state.demoWelcomeSeen) return;
-  const welcome = document.querySelector('#demo-welcome');
-  const closeButton = document.querySelector('#demo-welcome-close');
-  openParchmentDialog(welcome, closeButton, () => {
-    state.demoWelcomeSeen = true;
-    save();
-  });
-}
-
-function setupDemoMode() {
-  if (!isDemoMode) return;
-  document.body.classList.add('demo-mode');
-  document.querySelector('#demo-panel').hidden = false;
-  document.querySelector('#demo-badge').hidden = false;
-  const demoOath = document.querySelector('#demo-oath');
-  const oathCopy = document.querySelector('#shared-oath .oath-panel').cloneNode(true);
-  oathCopy.removeAttribute('aria-labelledby');
-  oathCopy.setAttribute('aria-label', 'The Oath');
-  oathCopy.querySelector('[id="oath-title"]').removeAttribute('id');
-  demoOath.append(oathCopy);
-  document.querySelector('#next-demo-day').addEventListener('click', () => {
-    if (activeSequence) return;
-    today = addLocalDays(today, 1);
-    state.simulatedDate = today;
-    save();
-    render();
-  });
-  document.querySelector('#reset-demo').addEventListener('click', () => {
-    localStorage.removeItem(ACTIVE_STORAGE_KEY);
-    state = seededDemoState(true);
-    today = state.simulatedDate;
-    save();
-    render();
-  });
-  document.querySelector('#start-demo-egg').addEventListener('click', async () => {
-    localStorage.removeItem(ACTIVE_STORAGE_KEY);
-    state = eggDemoState();
-    today = state.simulatedDate;
-    save();
-    render();
-    const creature = document.querySelector('#creature');
-    await waitForImageDecode(creature);
-    if (creature.classList.contains('egg-idle')) {
-      creature.classList.remove('egg-idle');
-      void creature.offsetWidth;
-      creature.classList.add('egg-idle');
-    }
-  });
-  setupOathReveal(document.querySelector('#read-demo-oath'), demoOath);
 }
 
 if (override) {
