@@ -1,4 +1,4 @@
-/* Keep the original scene geometry while dissolving its outer edges. */
+/* Dissolve the scene edges without masking its sprites. */
 .scene-frame { display: none; }
 
 /* The scene's solid fallback must not leave a rectangle behind the fade. */
@@ -10,27 +10,54 @@
 #scene > .ambient-markers,
 #scene > .scene-dimmer {
   -webkit-mask-image:
-    linear-gradient(to right, transparent, #000 12%, #000 88%, transparent),
-    linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+    linear-gradient(to right, transparent, #000 8%, #000 92%, transparent),
+    linear-gradient(to bottom, transparent, #000 8%, #000 92%, transparent);
   -webkit-mask-composite: source-in;
   mask-image:
-    linear-gradient(to right, transparent, #000 12%, #000 88%, transparent),
-    linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+    linear-gradient(to right, transparent, #000 8%, #000 92%, transparent),
+    linear-gradient(to bottom, transparent, #000 8%, #000 92%, transparent);
   mask-composite: intersect;
 }
 
-.scene-frame-wrap { isolation: isolate; }
+/* The art, sprites and effects share one exact 1024 × 1536 coordinate box.
+   The retired frame's insets must no longer consume space around that box. */
+.scene-frame-wrap {
+  isolation: isolate;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+}
+.scene-frame-wrap .scene { inset: 0; margin: 0; max-width: none; }
 .scene-frame-wrap::before {
   content: '';
   position: absolute;
-  inset: calc(var(--frame-top) - 30px) calc(var(--frame-right) - 30px)
-    calc(var(--frame-bottom) - 30px) calc(var(--frame-left) - 30px);
+  inset: -16px;
   z-index: -1;
   pointer-events: none;
   background: radial-gradient(ellipse, rgba(90, 140, 70, .18), transparent 70%);
 }
 
-/* The existing narrow layout gives the scene a 28px bottom margin. */
-@media (max-width: 899px) {
-  .scene-frame-wrap::before { bottom: calc(var(--frame-bottom) + 28px - 30px); }
+/* Keep the existing stacked/tablet layouts; align the unframed art at the top. */
+.scene-column { align-self: start; }
+@media (min-width: 900px) and (max-width: 1319px) {
+  .scene-frame-wrap { width: min(100%, calc(94.7vh * 2 / 3)); }
+}
+
+@media (min-width: 1320px) {
+  /* Size the art from viewport height; cap its width only to leave room
+     for both side columns and their gaps. The page may scroll vertically. */
+  .app-shell {
+    --side-track: min(342px, calc((100vw - 696px) / 2));
+    width: 100%;
+    min-height: 100dvh;
+    grid-template-rows: auto 1fr;
+    align-items: start;
+  }
+  .app-content {
+    grid-template-columns: minmax(0, 1fr)
+      min(calc(94.7vh * 2 / 3), calc(100vw - 144px - var(--side-track) - var(--side-track)))
+      minmax(0, 1fr);
+  }
+  .side-column { width: var(--side-track); }
+  .side-column, .oath-card, .demo-mode .demo-panel { margin-top: 0; }
 }
