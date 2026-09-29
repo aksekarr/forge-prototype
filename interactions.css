@@ -1,0 +1,143 @@
+.demo-actions button:not(#reset-demo):not(.secondary-action),
+#read-oath,
+.drawer-trigger,
+.drawer-close,
+.drawer-header > .drawer-close,
+.profile-welcome-card button {
+  box-shadow: inset 2px 2px 0 rgba(255,214,140,.55), inset -2px -2px 0 rgba(110,40,8,.55), 3px 3px 0 #3a1d0d;
+  text-shadow: 1px 1px 0 #6a2a08;
+  transition: transform 70ms steps(2), box-shadow 70ms steps(2), background-color 90ms;
+}
+
+.demo-actions button:not(#reset-demo):not(.secondary-action):hover:not(:disabled),
+#read-oath:hover:not(:disabled),
+.drawer-trigger:hover:not(:disabled),
+.drawer-close:hover:not(:disabled),
+.profile-welcome-card button:hover:not(:disabled) {
+  background: #db7a30;
+  transform: translate(-1px, -1px);
+  box-shadow: inset 2px 2px 0 rgba(255,226,160,.7), inset -2px -2px 0 rgba(110,40,8,.55), 4px 4px 0 #3a1d0d, 0 0 14px rgba(255,170,70,.35);
+}
+
+.demo-actions button:not(#reset-demo):not(.secondary-action):active:not(:disabled),
+#read-oath:active:not(:disabled),
+.drawer-trigger:active:not(:disabled),
+.drawer-close:active:not(:disabled),
+.profile-welcome-card button:active:not(:disabled) {
+  background: #b85e20;
+  transform: translate(2px, 2px);
+  box-shadow: inset -2px -2px 0 rgba(255,214,140,.35), inset 2px 2px 0 rgba(90,30,5,.6), 1px 1px 0 #3a1d0d;
+}
+
+.demo-actions button:not(#reset-demo):not(.secondary-action):focus-visible,
+#read-oath:focus-visible,
+.drawer-trigger:focus-visible,
+.drawer-close:focus-visible,
+.profile-welcome-card button:focus-visible {
+  outline: 2px solid #7b240d;
+  outline-offset: 3px;
+}
+
+.demo-actions button:disabled:not(#reset-demo) {
+  opacity: 1;
+  background: #cfae78;
+  color: #7a5532;
+  border-color: #8a6038;
+  box-shadow: inset 2px 2px 0 rgba(90,50,20,.25);
+  text-shadow: none;
+  cursor: not-allowed;
+}
+
+.secondary-action:hover:not(:disabled) {
+  background: rgba(201,107,40,.16);
+}
+
+.secondary-action:active:not(:disabled) {
+  background: rgba(201,107,40,.28);
+  transform: translate(1px, 1px);
+}
+
+.demo-actions #next-demo-day { order: 1; }
+.demo-actions #read-demo-oath { order: 2; }
+.demo-actions #reset-demo {
+  order: 3;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 2px 4px;
+  color: #8a4a22;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  justify-self: center;
+}
+
+.demo-actions #reset-demo:hover:not(:disabled) { color: #5a2408; }
+.demo-actions #reset-demo:disabled { opacity: .45; cursor: default; }
+
+.tick {
+  position: relative;
+  transition: transform 90ms ease-out;
+}
+
+.tick[aria-pressed="false"]:hover:not(:disabled) {
+  transform: scale(1.08);
+  border-width: 2px;
+  color: rgba(184,76,27,.38);
+  font-size: 17px;
+}
+
+.tick[aria-pressed="false"]:active:not(:disabled) { transform: scale(.92); }
+
+.tick[aria-pressed="true"] {
+  background: radial-gradient(circle at 34% 30%, #e0702e 0 18%, #b0421a 55%, #7a230a 100%);
+  border-color: #5e1a06;
+  box-shadow: inset 2px 2px 0 rgba(255,190,120,.35), inset -2px -2px 0 rgba(40,8,0,.3), 1px 2px 0 rgba(40,10,0,.45);
+  text-shadow: 1px 1px 0 #5e1a06;
+}
+
+.tick[aria-pressed="true"]:disabled { opacity: 1; cursor: default; }
+
+.tick.just-ticked { animation: seal-stamp 420ms cubic-bezier(.2,.9,.3,1.2) both; }
+
+.tick.just-ticked::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid #f0b35a;
+  pointer-events: none;
+  animation: seal-ring 520ms ease-out both;
+  animation-delay: var(--seal-animation-delay, 0ms);
+}
+
+.task.just-ticked {
+  background: linear-gradient(100deg, transparent 0 35%, rgba(255,214,120,.55) 50%, transparent 65%) no-repeat;
+  background-size: 250% 100%;
+  animation: row-glint 700ms ease-out both;
+}
+
+@keyframes seal-stamp {
+  0% { transform: scale(1.7); opacity: 0; }
+  45% { transform: scale(.86); opacity: 1; }
+  70% { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+
+@keyframes seal-ring {
+  from { transform: scale(.8); opacity: .95; }
+  to { transform: scale(2.1); opacity: 0; }
+}
+
+@keyframes row-glint {
+  from { background-position: 120% 0; }
+  to { background-position: -30% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tick.just-ticked,
+  .tick.just-ticked::after,
+  .task.just-ticked { animation: none; }
+  .tick.just-ticked::after { opacity: 0; }
+  .task.just-ticked { background: none; }
+}

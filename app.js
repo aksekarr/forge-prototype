@@ -184,6 +184,7 @@ let idleTimer = null;
 let currentIdleSequence = [];
 const tracksRealDate = !isDemoMode && !isLayoutMode && !override;
 let dateRefreshPromise = null;
+let justTickedDeed = null;
 
 function waitForSequenceEnd() {
   return new Promise(resolve => {
@@ -739,6 +740,8 @@ function render() {
     : formatDate(today);
   if (isProfileMode) document.querySelector('#tasks-title').firstChild.nodeValue = state.name ? `${state.name} · Today ` : 'Today ';
   const taskList = document.querySelector('#task-list');
+  const tickElapsed = justTickedDeed ? performance.now() - justTickedDeed.timestamp : 0;
+  if (tickElapsed >= 800) justTickedDeed = null;
   taskList.replaceChildren();
   if (profileIncomplete) {
     const message = document.createElement('p');
@@ -758,6 +761,14 @@ function render() {
     button.setAttribute('aria-label', checked ? `Undo ${task}` : `Complete ${task}`);
     button.disabled = Boolean(activeSequence || isLayoutMode || beforeFirstDay);
     button.textContent = '✓';
+    if (checked && justTickedDeed?.task === task) {
+      row.classList.add('just-ticked');
+      button.classList.add('just-ticked');
+      const animationDelay = `${-tickElapsed}ms`;
+      row.style.animationDelay = animationDelay;
+      button.style.animationDelay = animationDelay;
+      button.style.setProperty('--seal-animation-delay', animationDelay);
+    }
     row.append(label, button);
     taskList.append(row);
   });
@@ -781,7 +792,10 @@ document.querySelector('#task-list').addEventListener('click', async event => {
   const wasComplete = isComplete(tasks);
   if (!state.days[today]) state.days[today] = { tasks: {} };
   if (state.days[today].tasks[task]) delete state.days[today].tasks[task];
-  else state.days[today].tasks[task] = new Date().toISOString();
+  else {
+    state.days[today].tasks[task] = new Date().toISOString();
+    justTickedDeed = { task, timestamp: performance.now() };
+  }
   save();
   const nowComplete = isComplete(todayTasks());
   if (!wasComplete && nowComplete) runCompletion(countBefore);
