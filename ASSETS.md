@@ -13,6 +13,15 @@ Earlier assets (creature stages and idle frames, scenes, sword, ghost, scene fra
 - Used in: tarot cards (layout: art at left 92, top 196, 840×840 under the frame; name bar x 97–925, y 72–185; text box x 110–913, y 1051–1419 — all on the 1024×1536 frame)
 - Chosen: 2026-09-28
 
+## Tarot — card back
+- Asset: Card back — oxblood burgundy with antique gold engraving, central ornate hand mirror; high-detail illustration (deliberately not pixel art, to match the drawer's regal feel)
+- Source: AI-generated — ChatGPT image generation, Avi's prompt, 2026-09-29. Master: `Approved Spirit Friends /Tarot/card-back.png`
+- Processing: WebP quality 90, 1024×1536
+- Licence: AI-generated; label as AI-generated where honesty rules require
+- File: `assets/tarot/card-back.webp`
+- Used in: tarot card reveal (shown back-up before the flip)
+- Chosen: 2026-09-29
+
 ## Tarot — card art, season 1 (12 cards)
 - Asset: Art panels for I The Mirror, II The Excuse, III The Liar, IV Tomorrow, V The Stone, VI The Witness, VII The Return, VIII The Calm, IX The Ember, and shinies The Rumble, The Fury, The Ascent
 - Source: AI-generated — ChatGPT image generation, Avi's prompts, 2026-09-28 (The Stone regraded to night by Claude). Masters: `Approved Spirit Friends /Tarot/art-<name>.png`
